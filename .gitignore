@@ -1,17 +1,17 @@
-# Virtual environments
 .venv/
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+.DS_Store
+# Virtual environments
 venv/
 
 # Python caches
-__pycache__/
 *.py[cod]
 *$py.class
-
 # Jupyter & IDE
-.ipynb_checkpoints/
 .vscode/
 .idea/
-
 # OS files
-.DS_Store
 Thumbs.db
