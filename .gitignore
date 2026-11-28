@@ -4,3 +4,14 @@ __pycache__/
 *.pyo
 .ipynb_checkpoints/
 .DS_Store
+# Virtual environments
+venv/
+
+# Python caches
+*.py[cod]
+*$py.class
+# Jupyter & IDE
+.vscode/
+.idea/
+# OS files
+Thumbs.db
