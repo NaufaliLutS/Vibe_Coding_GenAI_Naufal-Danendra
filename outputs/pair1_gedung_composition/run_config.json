@@ -1,0 +1,54 @@
+{
+  "cli_args": {
+    "content": "Dataset\\Content\\sean-pollock-PhYq704ffdA-unsplash.jpg",
+    "style": "Dataset\\Style\\composition-vii-1913.jpg!Large.jpeg",
+    "output_dir": "outputs\\pair1_gedung_composition",
+    "steps": 500,
+    "lr": 0.02,
+    "alpha": 1.0,
+    "beta": 100000.0,
+    "optimizer": "adam",
+    "init": "content",
+    "height": 384,
+    "width": 512,
+    "device": "cuda",
+    "log_every": 100,
+    "save_every": 100
+  },
+  "device_used": "cuda",
+  "content_layers": [
+    "conv4_2"
+  ],
+  "style_layers": [
+    "conv1_1",
+    "conv2_1",
+    "conv3_1",
+    "conv4_1",
+    "conv5_1"
+  ],
+  "style_weights": {
+    "conv1_1": 0.2,
+    "conv2_1": 0.2,
+    "conv3_1": 0.2,
+    "conv4_1": 0.2,
+    "conv5_1": 0.2
+  },
+  "total_time_sec": 25.9218,
+  "avg_sec_per_step": 0.051844,
+  "initial_loss": {
+    "total_loss": 2805.060791015625,
+    "content_loss": 0.0,
+    "style_loss": 0.028050607070326805
+  },
+  "final_loss": {
+    "total_loss": 78.44232177734375,
+    "content_loss": 52.04914474487305,
+    "style_loss": 0.00026393175357952714
+  },
+  "outputs": {
+    "result_image": "outputs\\pair1_gedung_composition\\result.png",
+    "metrics_csv": "outputs\\pair1_gedung_composition\\metrics.csv",
+    "run_config_json": "outputs\\pair1_gedung_composition\\run_config.json"
+  },
+  "cuda_device_name": "NVIDIA GeForce RTX 4050 Laptop GPU"
+}
