@@ -1,0 +1,2020 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laporan Proyek 1 Vibe Coding — Neural Style Transfer (VGG-19)</title>
+  <style>
+    :root {
+      --primary: #16324f;
+      --primary-light: #244c75;
+      --accent: #2563eb;
+      --bg-page: #edf1f7;
+      --bg-card: #f8fafc;
+      --border: #cbd5e1;
+      --border-light: #e2e8f0;
+      --text-main: #1e293b;
+      --text-muted: #475569;
+      --code-bg: #f1f5f9;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 20mm 18mm 20mm 18mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      color: var(--text-main);
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+      font-size: 10pt;
+      line-height: 1.58;
+      background-color: var(--bg-page);
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Toolbar khusus layar, disembunyikan saat cetak PDF */
+    .print-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 24px;
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+    }
+
+    .print-toolbar .toolbar-title {
+      font-size: 9.5pt;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    .print-toolbar button {
+      background: #ffffff;
+      color: var(--primary);
+      border: none;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 9pt;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .print-toolbar button:hover {
+      background: #e2e8f0;
+    }
+
+    /* Kontainer halaman A4 pada pratinjau layar */
+    .document-wrapper {
+      max-width: 210mm;
+      margin: 20px auto 40px auto;
+      background: #ffffff;
+      padding: 20mm 18mm;
+      box-shadow: 0 6px 24px rgba(15, 23, 42, 0.12);
+    }
+
+    /* Halaman Judul */
+    .cover-page {
+      min-height: 252mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 1.5px solid var(--border);
+      padding: 22mm 18mm 18mm 18mm;
+      page-break-after: always;
+      break-after: page;
+    }
+
+    .cover-badge {
+      display: inline-block;
+      padding: 5px 12px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 8.5pt;
+      font-weight: 700;
+      letter-spacing: 1.1px;
+      text-transform: uppercase;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+
+    .cover-title {
+      font-size: 24pt;
+      line-height: 1.22;
+      color: var(--primary);
+      margin: 0 0 12px 0;
+      font-weight: 800;
+    }
+
+    .cover-subtitle {
+      font-size: 12.5pt;
+      line-height: 1.45;
+      color: var(--text-muted);
+      margin: 0 0 24px 0;
+      font-weight: 400;
+    }
+
+    .cover-divider {
+      height: 3px;
+      width: 72px;
+      background: var(--accent);
+      margin: 18px 0 24px 0;
+    }
+
+    .cover-abstract {
+      background: var(--bg-card);
+      border-left: 4px solid var(--primary);
+      padding: 12px 16px;
+      font-size: 9.5pt;
+      color: var(--text-main);
+      margin-bottom: 24px;
+    }
+
+    .cover-meta-grid {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 9.5pt;
+    }
+
+    .cover-meta-grid th,
+    .cover-meta-grid td {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .cover-meta-grid th {
+      background: #f1f5f9;
+      color: var(--primary);
+      font-weight: 700;
+      width: 28%;
+    }
+
+    .cover-footer {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      font-size: 9pt;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Tipografi Isi */
+    h1,
+    h2,
+    h3,
+    h4 {
+      color: var(--primary);
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    h1.chapter-title {
+      font-size: 15pt;
+      font-weight: 800;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 6px;
+      margin: 26px 0 12px 0;
+    }
+
+    h2 {
+      font-size: 12pt;
+      font-weight: 700;
+      margin: 18px 0 8px 0;
+      color: var(--primary-light);
+    }
+
+    h3 {
+      font-size: 10.5pt;
+      font-weight: 700;
+      margin: 14px 0 6px 0;
+    }
+
+    p {
+      margin: 0 0 9px 0;
+      text-align: justify;
+    }
+
+    ul,
+    ol {
+      margin: 0 0 10px 0;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 4px;
+      text-align: justify;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    code {
+      font-family: "Cascadia Code", "Consolas", "Courier New", monospace;
+      font-size: 8.6pt;
+      background: var(--code-bg);
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: #0f172a;
+    }
+
+    pre {
+      font-family: "Cascadia Code", "Consolas", "Courier New", monospace;
+      font-size: 8.2pt;
+      line-height: 1.45;
+      background: var(--code-bg);
+      border: 1px solid var(--border-light);
+      border-left: 3px solid var(--primary-light);
+      border-radius: 4px;
+      padding: 9px 11px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 8px 0 12px 0;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    /* Rumus Matematika */
+    .equation-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      padding: 9px 14px;
+      margin: 8px 0 12px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: "Cambria Math", "Georgia", "Times New Roman", serif;
+      font-size: 10.5pt;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .equation-main {
+      flex: 1;
+      text-align: center;
+    }
+
+    .equation-num {
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 8.8pt;
+      color: var(--text-muted);
+      margin-left: 12px;
+    }
+
+    /* Tabel Akademik */
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 14px 0;
+      font-size: 8.8pt;
+    }
+
+    table.data-table thead {
+      display: table-header-group;
+    }
+
+    table.data-table tr {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    table.data-table th,
+    table.data-table td {
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    table.data-table th {
+      background: var(--primary);
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    table.data-table tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    table.data-table td.num,
+    table.data-table th.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    /* Kotak Catatan / Callout */
+    .callout {
+      background: #f0f6ff;
+      border: 1px solid #bfdbfe;
+      border-left: 4px solid var(--accent);
+      border-radius: 4px;
+      padding: 9px 13px;
+      margin: 10px 0 12px 0;
+      font-size: 9.2pt;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .callout strong {
+      color: var(--primary);
+    }
+
+    /* Figur & Gambar */
+    figure {
+      margin: 12px 0 16px 0;
+      padding: 8px;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      background: #ffffff;
+      text-align: center;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    figure img {
+      max-width: 100%;
+      max-height: 175mm;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+    }
+
+    figcaption {
+      margin-top: 7px;
+      font-size: 8.8pt;
+      color: var(--text-muted);
+      text-align: justify;
+      line-height: 1.45;
+    }
+
+    figcaption strong {
+      color: var(--primary);
+    }
+
+    /* Pemisah Bab & Lampiran */
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+    }
+
+    .toc-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+    }
+
+    .toc-title {
+      font-size: 12pt;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 0 0 10px 0;
+      border-bottom: 1.5px solid var(--border);
+      padding-bottom: 5px;
+    }
+
+    .toc-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 9.5pt;
+    }
+
+    .toc-list li {
+      padding: 3px 0;
+      border-bottom: 1px dotted var(--border);
+    }
+
+    .toc-list li:last-child {
+      border-bottom: none;
+    }
+
+    .log-entry {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 10px 13px;
+      margin: 10px 0 14px 0;
+      background: #ffffff;
+    }
+
+    .log-entry-header {
+      background: #f1f5f9;
+      margin: -10px -13px 9px -13px;
+      padding: 7px 13px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 9.8pt;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    .log-meta {
+      font-size: 8.8pt;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 8pt;
+      font-weight: 700;
+      background: #e2e8f0;
+      color: var(--primary);
+      font-family: "Cascadia Code", "Consolas", monospace;
+    }
+
+    @media print {
+
+      html,
+      body {
+        background: #ffffff;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .document-wrapper {
+        max-width: none;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+
+      .cover-page {
+        min-height: 245mm;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="print-toolbar no-print">
+    <div class="toolbar-title">Laporan Proyek 1 Vibe Coding — Neural Style Transfer (VGG-19) | Siap Cetak A4</div>
+    <button type="button" onclick="window.print()">Cetak / Simpan ke PDF (A4)</button>
+  </div>
+
+  <div class="document-wrapper">
+
+    <!-- ==================== HALAMAN JUDUL ==================== -->
+    <section class="cover-page">
+      <div>
+        <div class="cover-badge">Laporan Proyek 1 — Generative AI &amp; Vibe Coding</div>
+        <h1 class="cover-title">Implementasi Neural Style Transfer Berbasis VGG-19</h1>
+        <p class="cover-subtitle">
+          Optimasi Piksel Langsung dengan Ekstraktor Fitur VGG-19 Beku, Perhitungan Manual Gram Matrix,
+          Content Loss, Style Loss, dan Analisis Hyperparameter Bobot Gaya (&beta;)
+        </p>
+        <div class="cover-divider"></div>
+
+        <div class="cover-abstract">
+          <strong>Ringkasan Eksekutif:</strong> Laporan ini mendokumentasikan perancangan, implementasi modular
+          (<em>from scratch</em>), strategi kolaborasi Git berbasis <em>Vibe Coding</em>, serta evaluasi kuantitatif dan
+          visual untuk sistem <strong>Neural Style Transfer (NST)</strong> menggunakan jaringan <code>VGG-19</code>
+          terlatih-awal (<em>pretrained</em>) pada PyTorch. Seluruh eksperimen utama dan <em>hyperparameter tuning</em>
+          (&beta; &isin; {10<sup>3</sup>, 10<sup>5</sup>, 10<sup>7</sup>}) dijalankan pada resolusi <em>landscape</em>
+          <code>384&times;512</code> selama 500 iterasi menggunakan akselerasi GPU
+          <code>NVIDIA GeForce RTX 4050 Laptop GPU</code> dengan rata-rata waktu eksekusi ~25,5&ndash;25,9 detik per
+          eksperimen.
+        </div>
+
+        <table class="cover-meta-grid">
+          <tr>
+            <th>Anggota 1</th>
+            <td>
+              <strong>Danendra Arden Shaduq</strong> &mdash; NIM <code>2311102146</code><br />
+              Peran: <em>Prompt Engineer &amp; LLM Navigator</em> + <em>Lead Documentarian &amp; Error Handler</em>
+              (Peran 1 &amp; 4)
+            </td>
+          </tr>
+          <tr>
+            <th>Anggota 2</th>
+            <td>
+              <strong>Naufal Luthfi Assary</strong> &mdash; NIM <code>2311102125</code><br />
+              Peran: <em>Data Pipeline &amp; Preprocessing Engineer</em> + <em>Training Loop &amp; Hyperparameter Tuning
+                Engineer</em> (Peran 2 &amp; 3)
+            </td>
+          </tr>
+          <tr>
+            <th>Repositori GitHub</th>
+            <td>
+              <a href="https://github.com/NaufaliLutS/Vibe_Coding_GenAI_Naufal-Danendra" target="_blank" rel="noopener">
+                https://github.com/NaufaliLutS/Vibe_Coding_GenAI_Naufal-Danendra
+              </a><br />
+              <code>https://github.com/NaufaliLutS/Vibe_Coding_GenAI_Naufal-Danendra.git</code>
+            </td>
+          </tr>
+          <tr>
+            <th>Teknologi &amp; Lingkungan</th>
+            <td>
+              Python 3.12.10 (<code>.venv</code>), PyTorch <code>2.6.0+cu124</code>, Torchvision
+              <code>0.21.0+cu124</code>, Pillow, Matplotlib, NumPy, CUDA
+              (<code>NVIDIA GeForce RTX 4050 Laptop GPU</code>)
+            </td>
+          </tr>
+          <tr>
+            <th>Tanggal Penyusunan</th>
+            <td>28 November 2026</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="cover-footer">
+        <span>Proyek 1 Vibe Coding &mdash; Neural Style Transfer (VGG-19)</span>
+        <span>Dokumen Teknis &amp; Evaluasi Eksperimen</span>
+      </div>
+    </section>
+
+    <!-- ==================== DAFTAR ISI ==================== -->
+    <div class="toc-box">
+      <div class="toc-title">Daftar Isi</div>
+      <ul class="toc-list">
+        <li><a href="#bab-1">1. Pendahuluan &amp; Pembagian Peran Tim</a></li>
+        <li><a href="#bab-2">2. Strategi Vibe Coding &amp; Alur Kolaborasi Git</a></li>
+        <li><a href="#bab-3">3. Metodologi Implementasi Neural Style Transfer</a></li>
+        <li><a href="#bab-4">4. Hasil &amp; Analisis Eksperimen</a></li>
+        <li><a href="#bab-5">5. Kesimpulan</a></li>
+        <li><a href="#lampiran-a">Lampiran A. Gabungan Log Interaksi LLM (Danendra &amp; Naufal)</a></li>
+        <li><a href="#lampiran-b">Lampiran B. Daftar Arsip Percakapan di <code>docs/chats/</code></a></li>
+      </ul>
+    </div>
+
+    <!-- ==================== BAB 1 ==================== -->
+    <section id="bab-1">
+      <h1 class="chapter-title">1. Pendahuluan &amp; Pembagian Peran Tim</h1>
+
+      <h2>1.1 Latar Belakang dan Tujuan Proyek</h2>
+      <p>
+        <em>Neural Style Transfer</em> (NST) merupakan teknik sintesis citra berbasis pembelajaran mendalam yang
+        memadukan struktur konten semantik dari sebuah citra foto (<em>content image</em>) dengan tekstur, sapuan kuas,
+        serta palet warna artistik dari citra lukisan (<em>style image</em>). Berbeda dari pelatihan jaringan saraf
+        konvensional yang memperbarui bobot model, NST mempertahankan seluruh bobot jaringan ekstraktor fitur
+        <code>VGG-19</code> dalam kondisi beku (<em>frozen</em>) dan melakukan optimasi iteratif langsung terhadap nilai
+        piksel tensor citra target.
+      </p>
+      <p>
+        Pada Proyek 1 ini, tim membangun sistem NST secara modular dari nol (<em>from scratch</em>) menggunakan PyTorch
+        tanpa memakai fungsi pembungkus instan seperti <code>nn.MSELoss</code>, <code>F.mse_loss</code>, ataupun pustaka
+        NST siap pakai. Seluruh operasi matematis inti&mdash;mulai dari normalisasi ImageNet, pemotongan <em>feature
+          extractor</em> VGG-19, perhitungan <em>Gram Matrix</em>, <em>Content Loss</em>, <em>Style Loss</em>, hingga
+        loop optimasi piksel dengan pencatatan metrik terstruktur&mdash;diimplementasikan secara eksplisit dan
+        diverifikasi melalui pengujian unit maupun eksperimen penuh pada GPU CUDA.
+      </p>
+
+      <h2>1.2 Pembagian Peran Tim dan Kepemilikan Modul</h2>
+      <p>
+        Untuk mencegah tumpang tindih perubahan kode dan menjaga kualitas dokumentasi sejak awal pengembangan, pekerjaan
+        dibagi secara tegas ke dalam empat peran yang diemban oleh dua anggota tim sebagai berikut:
+      </p>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 24%;">Anggota &amp; NIM</th>
+            <th style="width: 28%;">Peran Utama</th>
+            <th style="width: 25%;">Kepemilikan File / Modul</th>
+            <th style="width: 23%;">Tanggung Jawab Kunci</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <strong>Danendra Arden Shaduq</strong><br />
+              NIM: <code>2311102146</code>
+            </td>
+            <td>
+              <strong>Peran 1 &amp; 4:</strong><br />
+              Prompt Engineer &amp; LLM Navigator + Lead Documentarian &amp; Error Handler
+            </td>
+            <td>
+              <code>requirements.txt</code>, <code>.gitignore</code>, <code>config.py</code>,
+              <code>models/vgg_extractor.py</code>, <code>tests/smoke_test.py</code>,
+              <code>scripts/make_figures.py</code>, <code>docs/logs/log_danendra.md</code>,
+              <code>docs/chats/chat_danendra_*.md</code>, <code>docs/laporan_proyek1_nst.html</code>
+            </td>
+            <td>
+              Inisialisasi struktur repositori, sentralisasi konfigurasi &amp; kontrak antarmodul, pembangunan
+              ekstraktor fitur VGG-19 beku, pengujian integrasi (<em>smoke test</em>), pembuatan figur grafik &amp; grid
+              300 DPI, serta kompilasi laporan akhir.
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <strong>Naufal Luthfi Assary</strong><br />
+              NIM: <code>2311102125</code>
+            </td>
+            <td>
+              <strong>Peran 2 &amp; 3:</strong><br />
+              Data Pipeline &amp; Preprocessing Engineer + Training Loop &amp; Hyperparameter Tuning Engineer
+            </td>
+            <td>
+              <code>Dataset/</code>, <code>data/__init__.py</code>, <code>data/preprocessing.py</code>,
+              <code>models/__init__.py</code>, <code>models/losses.py</code>, <code>train.py</code>,
+              <code>outputs/</code> (6 eksperimen), <code>docs/logs/log_naufal.md</code>,
+              <code>docs/chats/chat_naufal_*.md</code>
+            </td>
+            <td>
+              Pengadaan 6 gambar dataset <em>landscape</em>, implementasi pipeline <em>load/deprocess/save</em>
+              ImageNet, perhitungan manual Gram Matrix &amp; fungsi loss, skrip training CLI
+              (<code>Adam</code>/<code>L-BFGS</code>), serta eksekusi 6 eksperimen visual dan tuning &beta;.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>1.3 Arsitektur Direktori Repositori</h2>
+      <p>
+        Struktur direktori repositori dirancang terpisah antara konfigurasi pusat, dataset, modul pemrosesan data,
+        arsitektur model &amp; fungsi loss, skrip pelatihan, pengujian otomatis, skrip visualisasi laporan, serta
+        dokumentasi interaksi AI:
+      </p>
+      <pre>Vibe_Coding_GenAI_Naufal-Danendra/
+├── config.py                     # Konstanta path, pasangan eksperimen, ImageNet, layer VGG-19, &amp; bobot default
+├── requirements.txt              # torch, torchvision, pillow, matplotlib, numpy
+├── train.py                      # Skrip training CLI end-to-end (Adam/L-BFGS, metrics.csv, run_config.json)
+├── Dataset/
+│   ├── Content/                  # 3 foto konten landscape (6000x4000)
+│   └── Style/                    # 3 lukisan gaya landscape (750x500, 750x598, 750x504)
+├── data/
+│   ├── __init__.py
+│   └── preprocessing.py          # load_image, deprocess_image, save_image, &amp; verifikasi outputs/data_check.png
+├── models/
+│   ├── __init__.py
+│   ├── vgg_extractor.py          # Kelas VGGFeatureExtractor (bobot beku, eval terkunci, ReLU non-inplace)
+│   └── losses.py                 # compute_gram_matrix, compute_content_loss, compute_style_loss, compute_total_loss
+├── tests/
+│   ├── __init__.py
+│   └── smoke_test.py             # Validasi dataset, VGGFeatureExtractor, &amp; integrasi opsional modul
+├── scripts/
+│   ├── __init__.py
+│   └── make_figures.py           # Pembuat 4 figur laporan 300 DPI (--mode real / --mode dummy)
+├── outputs/
+│   ├── data_check.png            # Grid 2x3 verifikasi preprocessing (1536x768)
+│   ├── pair1_gedung_composition/ # Eksperimen utama 1 (metrics.csv, run_config.json, result.png, step_0100..0500.png)
+│   ├── pair2_danau_starry/       # Eksperimen utama 2
+│   ├── pair3_rumah_greatwave/    # Eksperimen utama 3
+│   ├── tuning_beta_1e3/          # Tuning beta = 1e3 (metrics.csv, run_config.json, result.png)
+│   ├── tuning_beta_1e5/          # Tuning beta = 1e5
+│   ├── tuning_beta_1e7/          # Tuning beta = 1e7
+│   └── figures/                  # 4 figur final (loss_curves_pairs, loss_curves_tuning_beta, grid_main_pairs, grid_beta_tuning)
+└── docs/
+    ├── chats/                    # 7 arsip percakapan lengkap LLM (chat_danendra_*.md &amp; chat_naufal_*.md)
+    ├── logs/                     # log_danendra.md &amp; log_naufal.md
+    └── laporan_proyek1_nst.html  # Laporan akhir siap cetak PDF</pre>
+    </section>
+
+    <!-- ==================== BAB 2 ==================== -->
+    <section id="bab-2">
+      <h1 class="chapter-title">2. Strategi Vibe Coding &amp; Alur Kolaborasi Git</h1>
+
+      <h2>2.1 Strategi Vibe Coding Berbasis Kontrak Modular</h2>
+      <p>
+        Dalam pendekatan <em>Vibe Coding</em>, asisten LLM diposisikan sebagai mitra pemrograman yang bekerja
+        berdasarkan kontrak antarmuka yang ketat dan terverifikasi per modul, bukan generasi kode monolitik sekaligus.
+        Tim menerapkan lima prinsip utama sepanjang pengembangan:
+      </p>
+      <ol>
+        <li>
+          <strong>Isolasi Sesi per Modul (<em>One Chat per Module</em>):</strong> Setiap modul dikerjakan pada sesi
+          percakapan terpisah (3 modul untuk Danendra, 4 modul/tahap untuk Naufal) dengan konteks batas kepemilikan file
+          yang eksplisit agar agen LLM tidak memodifikasi modul milik rekan tim.
+        </li>
+        <li>
+          <strong>Kontrak Antarmuka Terpusat di <code>config.py</code>:</strong> Seluruh konstanta penting disepakati
+          sejak awal: parameter normalisasi <code>IMAGENET_MEAN</code> dan <code>IMAGENET_STD</code>, resolusi
+          <code>FAST_IMAGE_SIZE = (192, 256)</code> untuk uji cepat dan <code>FINAL_IMAGE_SIZE = (384, 512)</code> untuk
+          run final, pemetaan indeks <code>VGG19_LAYER_MAP</code>, dictionary output
+          <code>dict[str, torch.Tensor]</code> berdimensi <code>(B, C, H, W)</code>, serta skema kolom
+          <code>metrics.csv</code> (<code>step,total_loss,content_loss,style_loss,elapsed_sec</code>).
+        </li>
+        <li>
+          <strong>Pengembangan Paralel dengan Mekanisme <em>Fallback</em> &amp; <em>Optional Integration</em>:</strong>
+          Ketika Anggota 2 membangun <code>data/preprocessing.py</code> dan <code>models/losses.py</code> sebelum branch
+          Anggota 1 digabungkan ke <code>main</code>, impor <code>config.py</code> dibungkus blok
+          <code>try ... except ImportError</code> dengan nilai <em>fallback</em> identik. Sebaliknya,
+          <code>tests/smoke_test.py</code> milik Anggota 1 menggunakan inspeksi tanda tangan fungsi
+          (<code>_find_callable</code> dan <code>_call_with_accepted_kwargs</code>) serta penandaan <code>[SKIP]</code>
+          terkendali apabila modul Anggota 2 belum ada di branch kerja.
+        </li>
+        <li>
+          <strong>Dokumentasi Dimensi Tensor &amp; Verifikasi Segera:</strong> Setiap transformasi tensor pada kode
+          wajib disertai komentar perubahan dimensi (misalnya
+          <code>(B, C, H, W) -&gt; (B, C, H * W) -&gt; (B, C, C)</code>), dan setiap modul dilengkapi blok uji mandiri
+          (<code>__main__</code>) atau skrip uji yang dijalankan langsung melalui
+          <code>.\.venv\Scripts\python.exe</code>.
+        </li>
+        <li>
+          <strong>Keterlacakan Prompt, Eror, dan Solusi:</strong> Seluruh interaksi penting dirangkum ke dalam
+          <code>docs/logs/log_danendra.md</code> dan <code>docs/logs/log_naufal.md</code> serta diekspor utuh ke
+          <code>docs/chats/</code> sebagai jejak audit pengembangan.
+        </li>
+      </ol>
+
+      <h2>2.2 Alur Kolaborasi Git (Branch, Commit Prefix, dan Pull Request)</h2>
+      <p>
+        Kolaborasi kode dikelola melalui repositori GitHub menggunakan pola <em>feature branch per anggota</em>. Seluruh
+        kode baru dikembangkan pada branch masing-masing (<code>danendra</code> dan <code>naufal</code>) sebelum
+        diintegrasikan ke branch utama <code>main</code> melalui mekanisme <strong>Pull Request (PR)</strong>.
+      </p>
+      <ul>
+        <li><strong>Branch Kerja:</strong> <code>main</code> (branch integrasi stabil), <code>danendra</code> (modul
+          arsitektur, konfigurasi, pengujian, figur, laporan), dan <code>naufal</code> (dataset, preprocessing, fungsi
+          loss, skrip training, eksperimen).</li>
+        <li><strong>Konvensi Commit Prefix:</strong> Tim mengadopsi prefix deskriptif di awal pesan commit, yaitu
+          <code>[arch]</code> untuk inisialisasi arsitektur/ekstraktor/skrip figur, <code>[data]</code> untuk pipeline
+          preprocessing, <code>[train]</code> untuk fungsi loss, training loop, dan eksekusi eksperimen,
+          <code>[fix]</code> untuk penyelesaian konflik penggabungan, serta <code>[docs]</code> untuk log interaksi dan
+          arsip chat.</li>
+        <li><strong>Penyelesaian Konflik &amp; Integrasi PR:</strong> Ketika PR #1 dari branch <code>danendra</code>
+          masuk ke <code>main</code>, branch <code>naufal</code> sempat mengalami konflik ringan pada
+          <code>.gitignore</code> dan <code>models/__init__.py</code> karena kedua file dibuat paralel di tahap awal.
+          Konflik diselesaikan secara bersih pada commit <code>06e84d6</code> sebelum penulisan <code>train.py</code>
+          dan eksekusi eksperimen penuh.</li>
+      </ul>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 11%;">Commit</th>
+            <th style="width: 18%;">Tanggal (WIB)</th>
+            <th style="width: 16%;">Kontributor</th>
+            <th style="width: 55%;">Pesan Commit / Pull Request &amp; Cakupan Perubahan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>097d7cc</code></td>
+            <td>27 Nov 2026, 20:25</td>
+            <td>Naufal Luthfi</td>
+            <td><code>Menambahkan dataset: tambah 3 gambar konten dan 3 gambar gaya format landscape</code> (6 file di
+              <code>Dataset/</code>)</td>
+          </tr>
+          <tr>
+            <td><code>1ef1313</code></td>
+            <td>27 Nov 2026, 23:45</td>
+            <td>Danendra09</td>
+            <td><code>[arch] inisialisasi struktur repo, requirements, dan config.py</code> (11 file kerangka,
+              <code>config.py</code>, <code>requirements.txt</code>, <code>.gitignore</code>)</td>
+          </tr>
+          <tr>
+            <td><code>0244375</code></td>
+            <td>27 Nov 2026, 23:57</td>
+            <td>Danendra09</td>
+            <td><code>[arch] tambah VGGFeatureExtractor dan smoke_test</code> (<code>models/vgg_extractor.py</code>,
+              <code>tests/smoke_test.py</code>, log)</td>
+          </tr>
+          <tr>
+            <td><code>bde907d</code></td>
+            <td>28 Nov 2026, 08:37</td>
+            <td>Naufal Luthfi</td>
+            <td><code>[data] tambah modul preprocessing ImageNet dan verifikasi 6 gambar</code>
+              (<code>data/preprocessing.py</code>, <code>outputs/data_check.png</code>)</td>
+          </tr>
+          <tr>
+            <td><code>a2fc53c</code></td>
+            <td>28 Nov 2026, 08:49</td>
+            <td>Naufal Luthfi</td>
+            <td><code>[train] implementasi manual gram matrix, content loss, style loss dan unit test</code>
+              (<code>models/losses.py</code>, <code>models/__init__.py</code>)</td>
+          </tr>
+          <tr>
+            <td><code>718b2c9</code></td>
+            <td>28 Nov 2026, 08:57</td>
+            <td>Naufal Luthfi</td>
+            <td><code>Merge pull request #1 from NaufaliLutS/danendra</code> (integrasi modul Danendra ke
+              <code>main</code>)</td>
+          </tr>
+          <tr>
+            <td><code>06e84d6</code></td>
+            <td>28 Nov 2026, 09:00</td>
+            <td>Naufal Luthfi</td>
+            <td><code>[fix] selesaikan merge conflict .gitignore dan models/__init__.py dari main</code></td>
+          </tr>
+          <tr>
+            <td><code>e6f1324</code></td>
+            <td>28 Nov 2026, 10:09</td>
+            <td>Naufal Luthfi</td>
+            <td><code>[train] tambah skrip training loop NST dengan CLI, metrics.csv, dan run_config.json</code>
+              (<code>train.py</code>)</td>
+          </tr>
+          <tr>
+            <td><code>74a250c</code></td>
+            <td>28 Nov 2026, 10:23</td>
+            <td>Naufal Luthfi</td>
+            <td><code>[train] selesaikan 6 eksperimen visual, tuning beta, log interaksi, dan ekspor chat</code> (34
+              file di <code>outputs/</code> &amp; <code>log_naufal.md</code>)</td>
+          </tr>
+          <tr>
+            <td><code>62366bb</code></td>
+            <td>28 Nov 2026, 10:24</td>
+            <td>Naufal Luthfi</td>
+            <td><code>Merge pull request #2 from NaufaliLutS/naufal</code> (integrasi pipeline lengkap &amp; hasil 6
+              eksperimen ke <code>main</code>)</td>
+          </tr>
+          <tr>
+            <td><code>ba0bc19</code> / <code>80bee41</code></td>
+            <td>28 Nov 2026, 10:39&ndash;10:40</td>
+            <td>Naufal Luthfi</td>
+            <td><code>[docs] tambahkan lampiran ekspor riwayat chat Modul 1-4</code> &rarr;
+              <code>Merge pull request #3 from NaufaliLutS/naufal</code></td>
+          </tr>
+          <tr>
+            <td><code>eb87990</code></td>
+            <td>28 Nov 2026, 17:47</td>
+            <td>Danendra09</td>
+            <td><code>[arch] tambah scripts/make_figures.py</code> (skrip pembangkit 4 figur PNG 300 DPI)</td>
+          </tr>
+          <tr>
+            <td><code>8300ae0</code></td>
+            <td>28 Nov 2026, 17:48</td>
+            <td>Danendra09</td>
+            <td><code>[docs] lengkapi log dan arsip chat Danendra</code> (<code>log_danendra.md</code> dan 3 berkas
+              <code>chat_danendra_*.md</code>)</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ==================== BAB 3 ==================== -->
+    <section id="bab-3" class="page-break">
+      <h1 class="chapter-title">3. Metodologi Implementasi Neural Style Transfer</h1>
+
+      <h2>3.1 Dataset dan Pipeline Preprocessing ImageNet</h2>
+      <p>
+        Dataset terdiri atas 3 citra foto konten berorientasi <em>landscape</em> pada <code>Dataset/Content/</code> dan
+        3 citra lukisan gaya pada <code>Dataset/Style/</code> yang dipasangkan menjadi 3 pasangan eksperimen utama dalam
+        <code>config.EXPERIMENT_PAIRS</code>:
+      </p>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID Pasangan</th>
+            <th>Citra Konten (Dimensi Asli)</th>
+            <th>Citra Gaya (Dimensi Asli)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>pair1_gedung_composition_vii</code></td>
+            <td><code>sean-pollock-PhYq704ffdA-unsplash.jpg</code> (<code>6000&times;4000</code>, gedung pencakar
+              langit)</td>
+            <td><code>composition-vii-1913.jpg!Large.jpeg</code> (<code>750&times;500</code>, Kandinsky 1913)</td>
+          </tr>
+          <tr>
+            <td><code>pair2_danau_starry_night</code></td>
+            <td><code>gary-ellis-5vF16lNZ-gI-unsplash.jpg</code> (<code>6000&times;4000</code>, danau &amp; perbukitan)
+            </td>
+            <td><code>the-starry-night-1889.jpg!Large.jpeg</code> (<code>750&times;598</code>, Van Gogh 1889)</td>
+          </tr>
+          <tr>
+            <td><code>pair3_rumah_bukit_great_wave</code></td>
+            <td><code>saurabh-shukla-umkkXjt1feo-unsplash.jpg</code> (<code>6000&times;4000</code>, rumah di bukit
+              hijau)</td>
+            <td><code>the-great-wave-off-kanagawa.jpg!Large.jpeg</code> (<code>750&times;504</code>, Hokusai)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        Pada modul <code>data/preprocessing.py</code>, setiap gambar diproses melalui fungsi
+        <code>load_image(path, image_size, device)</code> dengan urutan transformasi sebagai berikut:
+      </p>
+      <ol>
+        <li>Membuka berkas gambar memakai Pillow dan melakukan konversi paksa ke ruang warna 3-kanal <code>RGB</code>
+          untuk menghindari eror dimensi kanal (seperti RGBA atau <em>grayscale</em>).</li>
+        <li>Mengubah ukuran citra secara seragam ke format <em>landscape</em> <code>(H, W) = (384, 512)</code>
+          (<code>FINAL_IMAGE_SIZE</code>; atau <code>(192, 256)</code> pada mode cepat <code>FAST_IMAGE_SIZE</code>)
+          menggunakan filter interpolasi <code>LANCZOS</code>.</li>
+        <li>Mengonversi citra ke array NumPy <code>float32</code> yang diskalakan ke rentang <code>[0.0, 1.0]</code>,
+          mengubah susunan dimensi dari <code>(H, W, 3)</code> menjadi <code>(3, H, W)</code> via
+          <code>permute(2, 0, 1)</code>, lalu menambahkan dimensi <em>batch</em> sehingga menjadi
+          <code>(1, 3, H, W)</code>.</li>
+        <li>Menerapkan normalisasi standar ImageNet per kanal menggunakan
+          <code>IMAGENET_MEAN = (0.485, 0.456, 0.406)</code> dan <code>IMAGENET_STD = (0.229, 0.224, 0.225)</code>
+          melalui <em>broadcasting</em> tensor <code>(1, 3, 1, 1)</code>:</li>
+      </ol>
+      <div class="equation-box">
+        <div class="equation-main">
+          <i>x</i><sub>norm,<i>c</i></sub> = (<i>x<sub>c</sub></i> &minus; &mu;<sub><i>c</i></sub>) /
+          &sigma;<sub><i>c</i></sub>, &nbsp;&nbsp; <i>c</i> &isin; {R, G, B}
+        </div>
+        <div class="equation-num">(1)</div>
+      </div>
+      <p>
+        Sebaliknya, untuk mengonversi hasil optimasi kembali menjadi citra yang dapat disimpan, fungsi
+        <code>deprocess_image(tensor)</code> melepaskan tensor dari graf <em>autograd</em>
+        (<code>detach().cpu().clone()</code>), mengembalikan distribusi piksel dengan operasi
+        <code>img * std + mean</code>, membatasi nilai ke rentang valid <code>[0.0, 1.0]</code> via
+        <code>torch.clamp</code>, dan mengubah susunan dimensi kembali ke <code>(H, W, 3)</code> sebelum dikonversi
+        menjadi <code>uint8 [0, 255]</code> oleh <code>save_image</code>.
+      </p>
+
+      <h2>3.2 Ekstraktor Fitur VGG-19 Beku (<code>models/vgg_extractor.py</code>)</h2>
+      <p>
+        Kelas <code>VGGFeatureExtractor(nn.Module)</code> memanfaatkan arsitektur <code>torchvision.models.vgg19</code>
+        dengan bobot pretrained <code>VGG19_Weights.DEFAULT</code>. Alih-alih memuat seluruh blok klasifikasi hingga
+        <em>fully connected layer</em>, ekstraktor hanya memotong bagian <code>vgg19.features</code> hingga indeks layer
+        terdalam yang dibutuhkan (<code>max_layer_idx + 1</code>, yakni indeks <code>0..28</code> atau total <strong>29
+          sub-layer</strong> sampai <code>conv5_1</code>) sehingga konsumsi memori lebih hemat dan eksekusi lebih cepat
+        baik di CPU maupun CUDA.
+      </p>
+      <p>
+        Tiga pengamanan krusial diterapkan dalam <code>VGGFeatureExtractor</code>:
+      </p>
+      <ul>
+        <li><strong>Nonaktifkan <code>inplace</code> pada <code>nn.ReLU</code>:</strong> Seluruh modul
+          <code>nn.ReLU</code> di dalam potongan <code>features</code> diatur menjadi <code>layer.inplace = False</code>
+          agar aktivasi <code>Conv2d</code> yang disimpan ke dictionary tidak tertimpa secara <em>in-place</em> sebelum
+          proses <em>backpropagation</em> selesai.</li>
+        <li><strong>Pembekuan Bobot:</strong> Seluruh parameter pada <code>self.features.parameters()</code> diatur
+          <code>requires_grad = False</code> sehingga tidak ada gradien yang dihitung untuk bobot VGG-19.</li>
+        <li><strong>Penguncian Mode <code>eval()</code>:</strong> Konstruktor memanggil <code>super().eval()</code> dan
+          metode <code>train(self, mode=True)</code> di-<em>override</em> untuk selalu memanggil
+          <code>super().train(False)</code>, menjamin perilaku ekstraktor tetap deterministik meskipun dipanggil
+          <code>model.train(True)</code>.</li>
+      </ul>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Indeks <code>vgg19.features</code></th>
+            <th>Nama Layer</th>
+            <th>Peran dalam NST</th>
+            <th>Bentuk Output pada <code>(1, 3, 192, 256)</code></th>
+            <th>Bentuk Output pada <code>(1, 3, 384, 512)</code></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>0</code></td>
+            <td><code>conv1_1</code></td>
+            <td>Style Layer (tekstur halus &amp; tepi)</td>
+            <td><code>(1, 64, 192, 256)</code></td>
+            <td><code>(1, 64, 384, 512)</code></td>
+          </tr>
+          <tr>
+            <td><code>5</code></td>
+            <td><code>conv2_1</code></td>
+            <td>Style Layer (pola lokal menengah)</td>
+            <td><code>(1, 128, 96, 128)</code></td>
+            <td><code>(1, 128, 192, 256)</code></td>
+          </tr>
+          <tr>
+            <td><code>10</code></td>
+            <td><code>conv3_1</code></td>
+            <td>Style Layer (motif &amp; struktur gaya)</td>
+            <td><code>(1, 256, 48, 64)</code></td>
+            <td><code>(1, 256, 96, 128)</code></td>
+          </tr>
+          <tr>
+            <td><code>19</code></td>
+            <td><code>conv4_1</code></td>
+            <td>Style Layer (komposisi warna &amp; sapuan besar)</td>
+            <td><code>(1, 512, 24, 32)</code></td>
+            <td><code>(1, 512, 48, 64)</code></td>
+          </tr>
+          <tr>
+            <td><code>21</code></td>
+            <td><code>conv4_2</code></td>
+            <td><strong>Content Layer</strong> (struktur semantik objek)</td>
+            <td><code>(1, 512, 24, 32)</code></td>
+            <td><code>(1, 512, 48, 64)</code></td>
+          </tr>
+          <tr>
+            <td><code>28</code></td>
+            <td><code>conv5_1</code></td>
+            <td>Style Layer (struktur gaya tingkat tinggi)</td>
+            <td><code>(1, 512, 12, 16)</code></td>
+            <td><code>(1, 512, 24, 32)</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>3.3 Implementasi Manual Gram Matrix dan Fungsi Loss (<code>models/losses.py</code>)</h2>
+      <p>
+        Seluruh komponen loss ditulis secara manual menggunakan operasi tensor dasar PyTorch (<code>reshape</code>,
+        <code>transpose</code>, <code>torch.bmm</code>, pengurangan, pengkuadratan <code>** 2</code>, dan
+        <code>torch.mean</code>) tanpa memanggil fungsi loss tingkat tinggi.
+      </p>
+
+      <h3>A. Gram Matrix Ternormalisasi (<code>compute_gram_matrix</code>)</h3>
+      <p>
+        Untuk menangkap korelasi statistik antar-kanal filter tanpa bergantung pada posisi spasial absolut, feature map
+        4D berdimensi <code>(B, C, H, W)</code> diratakan menjadi matriks <code>F</code> berukuran
+        <code>(B, C, H&middot;W)</code>, dikalikan dengan transposenya <code>F<sup>T</sup></code> berdimensi
+        <code>(B, H&middot;W, C)</code> via <code>torch.bmm</code> menghasilkan <code>(B, C, C)</code>, lalu
+        dinormalisasi terhadap total elemen aktivasi <code>C &middot; H &middot; W</code>:
+      </p>
+      <div class="equation-box">
+        <div class="equation-main">
+          <i>G<sub>ij</sub></i><sup>(<i>l</i>)</sup> = (1 / (<i>C<sub>l</sub></i> &middot; <i>H<sub>l</sub></i> &middot;
+          <i>W<sub>l</sub></i>)) &sum;<sub><i>k</i>=1..<i>H<sub>l</sub>W<sub>l</sub></i></sub>
+          <i>F<sub>ik</sub></i><sup>(<i>l</i>)</sup> <i>F<sub>jk</sub></i><sup>(<i>l</i>)</sup>
+        </div>
+        <div class="equation-num">(2)</div>
+      </div>
+
+      <h3>B. Content Loss (<code>compute_content_loss</code>)</h3>
+      <p>
+        <em>Content Loss</em> mengukur kedekatan struktur spasial citra target <code><i>P</i></code> terhadap citra
+        konten <code><i>C</i></code> pada layer <code>conv4_2</code> melalui <em>Mean Squared Error</em> manual:
+      </p>
+      <div class="equation-box">
+        <div class="equation-main">
+          <i>L</i><sub>content</sub>(<i>P</i>, <i>C</i>) = mean( (<i>F</i><sub>target</sub><sup>(conv4_2)</sup> &minus;
+          <i>F</i><sub>content</sub><sup>(conv4_2)</sup>)<sup>2</sup> )
+        </div>
+        <div class="equation-num">(3)</div>
+      </div>
+
+      <h3>C. Style Loss (<code>compute_style_loss</code>)</h3>
+      <p>
+        <em>Style Loss</em> menghitung akumulasi terbobot selisih kuadrat rata-rata antara Gram Matrix citra target
+        <code><i>G</i><sub>target</sub><sup>(<i>l</i>)</sup></code> dan Gram Matrix citra gaya
+        <code><i>G</i><sub>style</sub><sup>(<i>l</i>)</sup></code> pada lima layer gaya
+        <code><i>S</i> = {conv1_1, conv2_1, conv3_1, conv4_1, conv5_1}</code> dengan bobot seragam
+        <code><i>w<sub>l</sub></i> = 0,2</code>:
+      </p>
+      <div class="equation-box">
+        <div class="equation-main">
+          <i>L</i><sub>style</sub>(<i>P</i>, <i>S</i>) = &sum;<sub><i>l</i> &isin; <i>S</i></sub> <i>w<sub>l</sub></i>
+          &middot; mean( (<i>G</i><sub>target</sub><sup>(<i>l</i>)</sup> &minus;
+          <i>G</i><sub>style</sub><sup>(<i>l</i>)</sup>)<sup>2</sup> ), &nbsp;&nbsp; <i>w<sub>l</sub></i> = 0,2
+        </div>
+        <div class="equation-num">(4)</div>
+      </div>
+
+      <h3>D. Total Loss (<code>compute_total_loss</code>)</h3>
+      <p>
+        Kombinasi linier antara pelestarian konten (&alpha;) dan transfer gaya (&beta;) menghasilkan fungsi objektif
+        total yang dikembalikan bersama komponen individualnya sebagai tuple
+        <code>(total_loss, content_loss, style_loss)</code>:
+      </p>
+      <div class="equation-box">
+        <div class="equation-main">
+          <i>L</i><sub>total</sub> = &alpha; &middot; <i>L</i><sub>content</sub> + &beta; &middot;
+          <i>L</i><sub>style</sub>
+        </div>
+        <div class="equation-num">(5)</div>
+      </div>
+
+      <div class="callout">
+        <strong>Hasil Verifikasi Unit Test &amp; Smoke Test:</strong> Pengujian mandiri <code>models/losses.py</code>
+        pada CUDA membuktikan bentuk Gram Matrix tepat <code>(2, 128, 128)</code> dan simetris, nilai
+        <code>content_loss</code> dan <code>style_loss</code> sama dengan <code>0.00e+00</code> saat fitur target
+        identik, <code>total_loss = 2.0995</code> (<code>content = 2.0213</code>, <code>style = 0.000001</code>) saat
+        fitur berbeda, dan <code>total_loss.backward()</code> menghasilkan gradien valid bebas
+        <code>NaN</code>/<code>Inf</code>. Skrip <code>tests/smoke_test.py</code> juga terverifikasi sukses pada CPU
+        maupun CUDA (<code>frozen=True</code>, <code>eval_locked=True</code>).
+      </div>
+
+      <h2>3.4 Loop Optimasi End-to-End (<code>train.py</code>)</h2>
+      <p>
+        Skrip CLI <code>train.py</code> mengintegrasikan <code>config.py</code>, <code>data/preprocessing.py</code>,
+        <code>models/vgg_extractor.py</code>, dan <code>models/losses.py</code> dalam alur optimasi piksel berikut:
+      </p>
+      <ol>
+        <li><strong>Ekstraksi Fitur Referensi:</strong> <code>content_img</code> dan <code>style_img</code> dilewatkan
+          ke <code>VGGFeatureExtractor</code> di dalam blok <code>with torch.no_grad():</code> dan dilepas memakai
+          <code>.detach()</code> agar graf komputasi referensi tidak tersimpan saat iterasi.</li>
+        <li><strong>Inisialisasi Tensor Target:</strong> Fungsi <code>initialize_target</code> membuat tensor daun graf
+          <em>autograd</em> <code>target</code> berdimensi <code>(1, 3, H, W)</code> dengan
+          <code>requires_grad_(True)</code>, baik berupa kloning citra konten (<code>--init content</code>, default)
+          maupun derau Gaussian acak (<code>--init noise</code>).</li>
+        <li><strong>Konfigurasi Optimizer Khusus Piksel:</strong> Fungsi <code>build_optimizer</code> mendaftarkan hanya
+          <code>[target]</code> ke optimizer <code>Adam</code> (default <code>lr = 0.02</code>) atau <code>L-BFGS</code>
+          (<code>max_iter = 1</code> dengan pola <code>closure()</code>).</li>
+        <li><strong>Iterasi Optimasi &amp; Pencatatan Artefak:</strong> Pada setiap step <code>1..steps</code>, helper
+          <code>_compute_step_losses()</code> melakukan <code>optimizer.zero_grad()</code>, ekstraksi
+          <code>target_features = extractor(target)</code>, perhitungan <code>compute_total_loss</code>, dan
+          <code>total_loss.backward()</code> sebelum <code>optimizer.step()</code>. Nilai
+          <code>step, total_loss, content_loss, style_loss, elapsed_sec</code> dicatat ke <code>metrics.csv</code> di
+          tiap step, snapshot berkala disimpan tiap <code>--save_every</code> step bila diaktifkan, dan di akhir
+          pelatihan citra target disimpan ke <code>result.png</code> bersama metadata <code>run_config.json</code>.</li>
+      </ol>
+    </section>
+
+    <!-- ==================== BAB 4 ==================== -->
+    <section id="bab-4" class="page-break">
+      <h1 class="chapter-title">4. Hasil &amp; Analisis Eksperimen</h1>
+
+      <h2>4.1 Verifikasi Preprocessing Dataset</h2>
+      <p>
+        Sebelum tahap pelatihan dijalankan, blok verifikasi pada <code>data/preprocessing.py</code> memuat keenam citra
+        dari <code>Dataset/Content/</code> dan <code>Dataset/Style/</code> pada resolusi <code>(384, 512)</code>,
+        memvalidasi dimensi tensor <code>(1, 3, 384, 512)</code> serta konversi balik <code>deprocess_image</code> ke
+        rentang piksel <code>[0.0, 1.0]</code> (<code>float32</code>), lalu menyusunnya ke dalam grid visual 2&times;3
+        berdimensi <code>1536&times;768</code> piksel (<code>outputs/data_check.png</code>).
+      </p>
+
+      <figure>
+        <img src="../outputs/data_check.png" alt="Verifikasi Grid 2x3 Preprocessing Dataset Content dan Style" />
+        <figcaption>
+          <strong>Gambar 1.</strong> Hasil verifikasi <em>preprocessing</em> dan <em>deprocessing</em> pada
+          <code>outputs/data_check.png</code> (<code>1536&times;768</code> piksel). Baris atas menampilkan 3 gambar
+          konten (Danau, Rumah Bukit, Gedung) dan baris bawah menampilkan 3 gambar gaya (<em>Composition VII</em>,
+          <em>The Great Wave</em>, <em>The Starry Night</em>) dengan proporsi <em>landscape</em> dan reproduksi warna
+          akurat.
+        </figcaption>
+      </figure>
+
+      <h2>4.2 Ringkasan Kuantitatif Seluruh Eksperimen (<code>metrics.csv</code>)</h2>
+      <p>
+        Setelah uji pendahuluan 100 step pada <code>outputs/test_100steps/</code> selesai dalam <code>5,0888</code>
+        detik (<code>0,050888</code> detik/step) sebagai validasi cepat GPU, tim menjalankan dua kelompok eksperimen
+        resmi menggunakan perintah <code>train.py</code> pada perangkat <code>NVIDIA GeForce RTX 4050 Laptop GPU</code>
+        (CUDA) dengan konfigurasi seragam: resolusi penuh <code>384&times;512</code>, <code>steps = 500</code>,
+        optimizer <code>adam</code> (<code>lr = 0,02</code>), <code>init = content</code>, dan <code>alpha = 1,0</code>.
+        Tabel berikut merangkum seluruh angka asli dari <code>metrics.csv</code> dan <code>run_config.json</code> pada
+        keenam folder eksperimen di <code>outputs/</code>:
+      </p>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Eksperimen (Folder <code>outputs/</code>)</th>
+            <th class="num">Bobot &beta;</th>
+            <th class="num">Step 1 Total / Style</th>
+            <th class="num">Puncak Content (Step)</th>
+            <th class="num">Step 500 Content</th>
+            <th class="num">Step 500 Style</th>
+            <th class="num">Step 500 Total</th>
+            <th class="num">Waktu Total (s/step)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Pair 1: Gedung + Composition VII</strong><br /><code>pair1_gedung_composition</code></td>
+            <td class="num"><code>1e5</code></td>
+            <td class="num">2805,0608<br /><small>S: 0,028051</small></td>
+            <td class="num">126,6618<br /><small>(step 18)</small></td>
+            <td class="num">52,0491</td>
+            <td class="num">0,000264</td>
+            <td class="num">78,4423</td>
+            <td class="num">25,9218 dtk<br /><small>(0,051844)</small></td>
+          </tr>
+          <tr>
+            <td><strong>Pair 2: Danau + The Starry Night</strong><br /><code>pair2_danau_starry</code></td>
+            <td class="num"><code>1e5</code></td>
+            <td class="num">291,3643<br /><small>S: 0,002914</small></td>
+            <td class="num">27,8616<br /><small>(step 8)</small></td>
+            <td class="num">9,4136</td>
+            <td class="num">0,000068</td>
+            <td class="num">16,2347</td>
+            <td class="num">25,6803 dtk<br /><small>(0,051361)</small></td>
+          </tr>
+          <tr>
+            <td><strong>Pair 3: Rumah Bukit + The Great Wave</strong><br /><code>pair3_rumah_greatwave</code></td>
+            <td class="num"><code>1e5</code></td>
+            <td class="num">1602,1853<br /><small>S: 0,016022</small></td>
+            <td class="num">43,5143<br /><small>(step 12)</small></td>
+            <td class="num">25,3079</td>
+            <td class="num">0,000233</td>
+            <td class="num">48,6043</td>
+            <td class="num">25,6483 dtk<br /><small>(0,051297)</small></td>
+          </tr>
+          <tr>
+            <td><strong>Tuning &beta; = 10<sup>3</sup> (Dominan Konten)</strong><br /><code>tuning_beta_1e3</code></td>
+            <td class="num"><code>1e3</code></td>
+            <td class="num">28,0506<br /><small>S: 0,028051</small></td>
+            <td class="num">15,4198<br /><small>(step 2)</small></td>
+            <td class="num">3,7031</td>
+            <td class="num">0,004623</td>
+            <td class="num">8,3261</td>
+            <td class="num">25,5123 dtk<br /><small>(0,051025)</small></td>
+          </tr>
+          <tr>
+            <td><strong>Tuning &beta; = 10<sup>5</sup> (Seimbang)</strong><br /><code>tuning_beta_1e5</code></td>
+            <td class="num"><code>1e5</code></td>
+            <td class="num">2805,0608<br /><small>S: 0,028051</small></td>
+            <td class="num">126,6559<br /><small>(step 18)</small></td>
+            <td class="num">51,9220</td>
+            <td class="num">0,000265</td>
+            <td class="num">78,4505</td>
+            <td class="num">25,5379 dtk<br /><small>(0,051076)</small></td>
+          </tr>
+          <tr>
+            <td><strong>Tuning &beta; = 10<sup>7</sup> (Dominan Gaya)</strong><br /><code>tuning_beta_1e7</code></td>
+            <td class="num"><code>1e7</code></td>
+            <td class="num">280506,0625<br /><small>S: 0,028051</small></td>
+            <td class="num">208,2512<br /><small>(step 268)</small></td>
+            <td class="num">204,1294</td>
+            <td class="num">0,000085</td>
+            <td class="num">1056,0255</td>
+            <td class="num">25,4718 dtk<br /><small>(0,050944)</small></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        Untuk memperlihatkan dinamika konvergensi secara berkala setiap 100 iterasi, tabel berikut menyajikan progres
+        nilai <code>total_loss</code>, <code>content_loss</code>, <code>style_loss</code>, dan waktu tempuh kumulatif
+        (<code>elapsed_sec</code>) langsung dari berkas <code>metrics.csv</code>:
+      </p>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Eksperimen</th>
+            <th class="num">Step 100<br />(T / C / S)</th>
+            <th class="num">Step 200<br />(T / C / S)</th>
+            <th class="num">Step 300<br />(T / C / S)</th>
+            <th class="num">Step 400<br />(T / C / S)</th>
+            <th class="num">Step 500<br />(T / C / S)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>pair1_gedung_composition</code></td>
+            <td class="num">138,03 / 77,96 / 6,01e-4</td>
+            <td class="num">106,88 / 65,09 / 4,18e-4</td>
+            <td class="num">92,46 / 58,75 / 3,37e-4</td>
+            <td class="num">83,97 / 54,74 / 2,92e-4</td>
+            <td class="num">78,44 / 52,05 / 2,64e-4</td>
+          </tr>
+          <tr>
+            <td><code>pair2_danau_starry</code></td>
+            <td class="num">22,37 / 12,78 / 9,60e-5</td>
+            <td class="num">18,89 / 10,95 / 7,90e-5</td>
+            <td class="num">17,50 / 10,13 / 7,40e-5</td>
+            <td class="num">16,75 / 9,70 / 7,00e-5</td>
+            <td class="num">16,23 / 9,41 / 6,80e-5</td>
+          </tr>
+          <tr>
+            <td><code>pair3_rumah_greatwave</code></td>
+            <td class="num">125,18 / 34,74 / 9,04e-4</td>
+            <td class="num">78,25 / 30,31 / 4,79e-4</td>
+            <td class="num">62,64 / 27,94 / 3,47e-4</td>
+            <td class="num">54,12 / 26,26 / 2,79e-4</td>
+            <td class="num">48,60 / 25,31 / 2,33e-4</td>
+          </tr>
+          <tr>
+            <td><code>tuning_beta_1e3</code></td>
+            <td class="num">13,15 / 5,20 / 7,95e-3</td>
+            <td class="num">10,92 / 4,81 / 6,11e-3</td>
+            <td class="num">9,63 / 4,33 / 5,30e-3</td>
+            <td class="num">8,84 / 3,99 / 4,84e-3</td>
+            <td class="num">8,33 / 3,70 / 4,62e-3</td>
+          </tr>
+          <tr>
+            <td><code>tuning_beta_1e5</code></td>
+            <td class="num">138,00 / 77,95 / 6,01e-4</td>
+            <td class="num">106,95 / 65,16 / 4,18e-4</td>
+            <td class="num">92,53 / 58,79 / 3,37e-4</td>
+            <td class="num">84,00 / 54,80 / 2,92e-4</td>
+            <td class="num">78,45 / 51,92 / 2,65e-4</td>
+          </tr>
+          <tr>
+            <td><code>tuning_beta_1e7</code></td>
+            <td class="num">4341,74 / 202,08 / 4,14e-4</td>
+            <td class="num">2493,00 / 207,67 / 2,29e-4</td>
+            <td class="num">1717,12 / 208,07 / 1,51e-4</td>
+            <td class="num">1303,54 / 206,55 / 1,10e-4</td>
+            <td class="num">1056,03 / 204,13 / 8,50e-5</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        Catatan penting dari data <code>metrics.csv</code>: karena seluruh eksperimen diinisialisasi dari citra konten
+        (<code>--init content</code>), nilai <code>content_loss</code> pada <strong>Step 1</strong> selalu bernilai
+        tepat <code>0,000000</code>, sementara <code>style_loss</code> berada pada titik tertinggi. Pada iterasi-iterasi
+        awal (step 2&ndash;18 untuk &beta;=10<sup>5</sup>), gradien <code>style_loss</code> yang jauh lebih besar
+        mendorong perubahan tekstur secara agresif sehingga <code>content_loss</code> melonjak terlebih dahulu sebelum
+        kemudian melandai seiring konvergensi keseimbangan konten-gaya.
+      </p>
+
+      <h2>4.3 Analisis 3 Pasangan Visual Utama (Kelompok A)</h2>
+      <p>
+        Kelompok A menguji generalisasi sistem NST pada tiga pasangan konten dan gaya dengan karakteristik visual yang
+        sangat kontras menggunakan bobot standar &alpha; = 1,0 dan &beta; = 10<sup>5</sup>.
+      </p>
+
+      <figure>
+        <img src="../outputs/figures/grid_main_pairs.png" alt="Grid Perbandingan Visual 3 Pasangan Utama" />
+        <figcaption>
+          <strong>Gambar 2.</strong> Perbandingan visual <em>Content &mdash; Style &mdash; Output</em> untuk ketiga
+          pasangan eksperimen utama pada resolusi <code>384&times;512</code> setelah 500 step optimasi
+          (<code>outputs/figures/grid_main_pairs.png</code>).
+        </figcaption>
+      </figure>
+
+      <figure>
+        <img src="../outputs/figures/loss_curves_pairs.png" alt="Kurva Konvergensi Loss 3 Pasangan Eksperimen Utama" />
+        <figcaption>
+          <strong>Gambar 3.</strong> Kurva konvergensi <code>Content Loss</code>, <code>Style Loss</code> (skala
+          logaritmik), dan <code>Total Loss</code> (skala logaritmik) selama 500 step untuk 3 pasangan utama
+          (<code>outputs/figures/loss_curves_pairs.png</code>).
+        </figcaption>
+      </figure>
+
+      <ul>
+        <li>
+          <strong>Pair 1 &mdash; Gedung + <em>Composition VII</em> (<code>pair1_gedung_composition</code>):</strong>
+          Foto arsitektur pencakar langit bergeometri tegas dan monokromatik-biru dipadukan dengan lukisan abstrak
+          ekspresionis Wassily Kandinsky yang kaya warna primer dan bentuk lengkung kompleks. Akibat kontras tekstur dan
+          palet yang ekstrem, <code>style_loss</code> awal merupakan yang tertinggi (<code>0,028051</code>), memicu
+          lonjakan <code>content_loss</code> hingga puncak <code>126,6618</code> pada step 18 sebelum turun stabil ke
+          <code>52,0491</code> di step 500 (<code>total_loss</code> turun 97,2% dari <code>2805,0608</code> ke
+          <code>78,4423</code>). Secara visual pada Gambar 2, area langit cerah di sela-sela gedung menyerap motif
+          abstrak dan warna-warni lembut <em>Composition VII</em> serta memberi semburat oranye-kuning pada pantulan
+          kaca gedung, sementara garis tepi struktur bangunan tetap berdiri kokoh.
+        </li>
+        <li>
+          <strong>Pair 2 &mdash; Danau + <em>The Starry Night</em> (<code>pair2_danau_starry</code>):</strong>
+          Pemandangan alam danau dan perbukitan berawan memiliki kecocokan struktural dan tonal paling dekat dengan
+          langit berpusar serta bukit biru-hijau karya Vincent van Gogh. Hal ini tercermin langsung dari nilai
+          <code>style_loss</code> awal yang paling rendah di antara ketiganya (<code>0,002914</code>). Puncak
+          <code>content_loss</code> hanya mencapai <code>27,8616</code> pada step 8, lalu melandai paling rendah menjadi
+          <code>9,4136</code> pada step 500 dengan <code>style_loss</code> akhir terendah pula (<code>0,000068</code>;
+          <code>total_loss = 16,2347</code>). Secara visual, sapuan kuas bergelombang khas <em>The Starry Night</em>
+          menyatu secara alami pada tekstur awan di langit serta permukaan bukit dan pantulan air danau tanpa artefak
+          warna yang mengganggu.
+        </li>
+        <li>
+          <strong>Pair 3 &mdash; Rumah Bukit + <em>The Great Wave off Kanagawa</em>
+            (<code>pair3_rumah_greatwave</code>):</strong>
+          Foto padang rumput hijau cerah dengan rumah kayu di tengah dan pepohonan gelap di kiri atas dipadukan dengan
+          cukil kayu (<em>woodblock print</em>) Hokusai yang berunsur garis tegas biru-putih dan tekstur kertas krem.
+          Nilai <code>style_loss</code> turun dari <code>0,016022</code> ke <code>0,000233</code>, sedangkan
+          <code>content_loss</code> memuncak di <code>43,5143</code> (step 12) dan berakhir pada <code>25,3079</code>
+          (<code>total_loss</code> turun dari <code>1602,1853</code> ke <code>48,6043</code>). Pada hasil visualnya,
+          warna rumput hijau bergeser menjadi gradasi zaitun-krem bertekstur garis ombak bergelombang, pepohonan di
+          sudut kiri atas menyerap nuansa biru tua berbuih khas ombak Hokusai, sementara rumah utama di tengah tetap
+          mempertahankan bentuk atap, jendela, dan kontrasnya dengan jelas.
+        </li>
+      </ul>
+
+      <h2>4.4 Analisis Hyperparameter Tuning Variasi &beta; (Kelompok B)</h2>
+      <p>
+        Kelompok B mengisolasi pengaruh bobot gaya
+        <code>&beta; &isin; {10<sup>3</sup>, 10<sup>5</sup>, 10<sup>7</sup>}</code> dengan menahan seluruh parameter
+        lain konstan (&alpha; = 1,0, <code>Adam</code>, <code>lr = 0,02</code>, 500 step, resolusi
+        <code>384&times;512</code>, pasangan <em>Gedung + Composition VII</em>). Hasilnya membuktikan adanya
+        <em>trade-off</em> langsung antara pelestarian struktur konten dan intensitas transfer gaya.
+      </p>
+
+      <figure>
+        <img src="../outputs/figures/loss_curves_tuning_beta.png" alt="Perbandingan Kurva Loss Variasi Beta" />
+        <figcaption>
+          <strong>Gambar 4.</strong> Perbandingan kurva <code>Content Loss</code>, <code>Style Loss</code> (skala
+          logaritmik), dan <code>Total Loss</code> (skala logaritmik) pada variasi bobot gaya &beta; &isin;
+          {10<sup>3</sup>, 10<sup>5</sup>, 10<sup>7</sup>} (<code>outputs/figures/loss_curves_tuning_beta.png</code>).
+        </figcaption>
+      </figure>
+
+      <figure>
+        <img src="../outputs/figures/grid_beta_tuning.png" alt="Grid Perbandingan Visual Variasi Beta" />
+        <figcaption>
+          <strong>Gambar 5.</strong> Perbandingan visual pengaruh variasi bobot gaya &beta; &isin; {10<sup>3</sup>,
+          10<sup>5</sup>, 10<sup>7</sup>} terhadap citra <em>Gedung + Composition VII</em> setelah 500 iterasi
+          (<code>outputs/figures/grid_beta_tuning.png</code>).
+        </figcaption>
+      </figure>
+
+      <ol>
+        <li>
+          <strong>Dominan Konten (&beta; = 10<sup>3</sup>, <code>tuning_beta_1e3</code>):</strong>
+          Dengan rasio &beta;/&alpha; = 10<sup>3</sup>, penalti perubahan konten mendominasi fungsi objektif.
+          <code>content_loss</code> memuncak sangat rendah di <code>15,4198</code> (step 2) dan turun ke
+          <code>3,7031</code> di step 500, sedangkan <code>style_loss</code> melandai lambat dari <code>0,028051</code>
+          hanya menjadi <code>0,004623</code> (17,4 kali lebih tinggi daripada &beta; = 10<sup>5</sup>). Pada Gambar 5,
+          struktur dan warna asli gedung nyaris tidak berubah; efek lukisan Kandinsky hanya tampak sebagai bercak pola
+          warna kecil di area tengah atas langit.
+        </li>
+        <li>
+          <strong>Titik Keseimbangan Optimal (&beta; = 10<sup>5</sup>, <code>tuning_beta_1e5</code>):</strong>
+          Rasio &beta;/&alpha; = 10<sup>5</sup> memberikan keseimbangan gradien terbaik. Setelah mencapai puncak
+          <code>content_loss = 126,6559</code> pada step 18, sistem secara simultan menekan <code>style_loss</code>
+          sebesar ~99,05% (dari <code>0,028051</code> ke <code>0,000265</code>) sekaligus memulihkan struktur konten
+          hingga <code>content_loss = 51,9220</code> dan <code>total_loss = 78,4505</code> pada step 500. Secara visual,
+          tekstur dan palet warna <em>Composition VII</em> tersebar merata pada langit serta menyatu halus ke pantulan
+          kaca gedung tanpa merusak garis arsitektur. (Catatan: perbedaan sangat kecil antara
+          <code>pair1_gedung_composition</code> dan <code>tuning_beta_1e5</code>&mdash;yakni <code>total_loss</code>
+          <code>78,4423</code> vs <code>78,4505</code>&mdash;berasal dari sifat non-deterministik operasi paralel CUDA
+          pada GPU.)
+        </li>
+        <li>
+          <strong>Dominan Gaya (&beta; = 10<sup>7</sup>, <code>tuning_beta_1e7</code>):</strong>
+          Pada &beta;/&alpha; = 10<sup>7</sup>, lonjakan awal <code>total_loss</code> mencapai <code>280506,0625</code>.
+          Optimizer memprioritaskan penekanan <code>style_loss</code> hingga mencapai nilai terendah
+          <code>0,000085</code> di step 500, namun mengorbankan pelestarian konten: <code>content_loss</code> terus naik
+          hingga memuncak di <code>208,2512</code> pada step 268 dan tetap tinggi di <code>204,1294</code> pada step 500
+          (hampir 4 kali lebih besar dibanding &beta; = 10<sup>5</sup>). Secara visual, pola abstrak dan saturasi warna
+          gelap-kontras lukisan mendominasi tekstur langit maupun permukaan gedung, sementara siluet makro bangunan
+          masih dapat dikenali terutama karena titik awal optimasi menggunakan <code>--init content</code>.
+        </li>
+      </ol>
+    </section>
+
+    <!-- ==================== BAB 5 ==================== -->
+    <section id="bab-5">
+      <h1 class="chapter-title">5. Kesimpulan</h1>
+      <ol>
+        <li>
+          <strong>Implementasi Modular dari Nol Berjalan Valid:</strong> Seluruh komponen Neural Style Transfer berbasis
+          <code>VGG-19</code>&mdash;mulai dari pipeline normalisasi/denormalisasi ImageNet
+          (<code>data/preprocessing.py</code>), ekstraktor fitur beku dengan penguncian <code>eval()</code> dan
+          <code>ReLU(inplace=False)</code> (<code>models/vgg_extractor.py</code>), perhitungan manual Gram Matrix,
+          Content Loss, Style Loss, dan Total Loss (<code>models/losses.py</code>), hingga training loop CLI
+          (<code>train.py</code>)&mdash;berhasil dibangun dari operasi tensor dasar PyTorch tanpa pustaka NST instan
+          serta lolos unit test dan <em>smoke test</em>.
+        </li>
+        <li>
+          <strong>Performa Komputasi Stabil dan Cepat:</strong> Eksekusi 6 eksperimen resmi pada resolusi
+          <code>384&times;512</code> selama 500 iterasi (<code>Adam</code>, <code>lr = 0,02</code>) menggunakan GPU
+          <code>NVIDIA GeForce RTX 4050 Laptop GPU</code> mencatat waktu total konsisten di rentang <code>25,4718</code>
+          hingga <code>25,9218</code> detik per run (~<code>0,0509&ndash;0,0518</code> detik/step).
+        </li>
+        <li>
+          <strong>Karakteristik Pasangan Konten-Gaya Mempengaruhi Konvergensi:</strong> Pasangan dengan keselarasan
+          tonal dan tekstur alami paling dekat (<em>Pair 2: Danau + The Starry Night</em>) mencapai konvergensi terbaik
+          (<code>content_loss = 9,4136</code>, <code>style_loss = 0,000068</code>, <code>total_loss = 16,2347</code>),
+          sedangkan pasangan berkontras tinggi (<em>Pair 1: Gedung + Composition VII</em>) membutuhkan pengorbanan
+          <code>content_loss</code> lebih besar (<code>52,0491</code>) untuk menyerap pola warna abstrak.
+        </li>
+        <li>
+          <strong>Bobot Gaya &beta; = 10<sup>5</sup> Terbukti Paling Seimbang:</strong> Eksperimen tuning pada &beta;
+          &isin; {10<sup>3</sup>, 10<sup>5</sup>, 10<sup>7</sup>} (&alpha; = 1,0) menunjukkan &beta; = 10<sup>3</sup>
+          menghasilkan transfer gaya terlalu lemah (<code>style_loss = 0,004623</code>), &beta; = 10<sup>7</sup> menekan
+          <code>style_loss</code> paling rendah (<code>0,000085</code>) dengan lonjakan <code>content_loss</code> tinggi
+          (<code>204,1294</code>), dan &beta; = 10<sup>5</sup> menjadi konfigurasi optimal yang menjaga keterbacaan
+          struktur arsitektur sekaligus mentransfer tekstur artistik secara merata.
+        </li>
+        <li>
+          <strong>Efektivitas Vibe Coding &amp; Kolaborasi Git:</strong> Pembagian kontrak antarmuka di
+          <code>config.py</code>, isolasi sesi LLM per modul, penulisan log terstruktur, serta alur branch terpisah
+          (<code>danendra</code> dan <code>naufal</code>) dengan integrasi PR ke <code>main</code> memungkinkan
+          pengembangan paralel selesai tertib dan terdokumentasi penuh.
+        </li>
+      </ol>
+    </section>
+
+    <!-- ==================== LAMPIRAN A ==================== -->
+    <section id="lampiran-a" class="page-break">
+      <h1 class="chapter-title">Lampiran A. Gabungan Log Interaksi LLM (Danendra &amp; Naufal)</h1>
+      <p>
+        Lampiran ini menyajikan catatan interaksi LLM asli yang disusun oleh kedua anggota selama pengembangan proyek
+        pada berkas <code>docs/logs/log_danendra.md</code> dan <code>docs/logs/log_naufal.md</code>.
+      </p>
+
+      <h2>A.1 Log Interaksi Anggota 1 &mdash; Danendra Arden Shaduq (2311102146)</h2>
+      <p>Sumber: <code>docs/logs/log_danendra.md</code></p>
+
+      <div class="log-entry">
+        <div class="log-entry-header">Sesi 1 &mdash; Inisialisasi Struktur Repositori &amp; Setup Awal</div>
+        <div class="log-meta">
+          <strong>Tanggal &amp; Waktu:</strong> 2026-11-27 23:08 WIB &bull;
+          <strong>Branch:</strong> <span class="badge">danendra</span> &bull;
+          <strong>File:</strong> <code>models/__init__.py</code>, <code>tests/__init__.py</code>,
+          <code>scripts/__init__.py</code>, <code>outputs/.gitkeep</code>, <code>docs/prompts/.gitkeep</code>,
+          <code>docs/chats/.gitkeep</code>, <code>docs/logs/log_danendra.md</code>, <code>requirements.txt</code>,
+          <code>.gitignore</code>
+        </div>
+        <p><strong>Ringkasan Prompt:</strong> Memeriksa struktur awal repositori serta membuat kerangka direktori paket,
+          folder output/dokumentasi, <code>requirements.txt</code>, <code>.gitignore</code>, dan header
+          <code>docs/logs/log_danendra.md</code> tanpa membuat file kode inti ataupun modul milik Naufal.</p>
+        <p><strong>Ringkasan Output LLM:</strong> Membuat 9 file inisialisasi awal (<code>__init__.py</code> pada
+          <code>models/</code>, <code>tests/</code>, <code>scripts/</code>, <code>.gitkeep</code> pada
+          <code>outputs/</code>, <code>docs/prompts/</code>, <code>docs/chats/</code>, <code>requirements.txt</code>
+          berisi 5 dependensi inti, <code>.gitignore</code>, dan header identitas Danendra di
+          <code>docs/logs/log_danendra.md</code>) beserta ringkasan peran Anggota 1.</p>
+        <p><strong>Hasil Verifikasi / Pengujian:</strong> Menjalankan
+          <code>Get-ChildItem -Force -Recurse -Depth 3</code> dan <code>git status -u</code>; terverifikasi berada di
+          branch <code>danendra</code> dan ke-9 file inisialisasi terbentuk tanpa mengubah <code>Dataset/</code>.</p>
+        <p><strong>Alasan Khusus:</strong> Kerangka direktori paket (<code>models/</code>, <code>tests/</code>,
+          <code>scripts/</code>), placeholder <code>.gitkeep</code>, <code>requirements.txt</code>,
+          <code>.gitignore</code>, dan <code>docs/logs/log_danendra.md</code> disiapkan lebih awal agar struktur proyek
+          dan dokumentasi pada branch <code>danendra</code> terisolasi rapi sebelum kode inti ditulis. Modul inti maupun
+          file milik Anggota 2 (<code>data/preprocessing.py</code>, <code>models/losses.py</code>,
+          <code>train.py</code>) sengaja tidak dibuat pada tahap ini demi mencegah <em>merge conflict</em> dan menjaga
+          batas kepemilikan modul.</p>
+        <p><strong>Analisis &amp; Solusi:</strong> Tidak ditemukan eror saat inisialisasi struktur. Agar direktori
+          kosong tetap terlacak di Git tanpa mengotori repositori, ditambahkan berkas <code>.gitkeep</code> pada
+          <code>outputs/</code>, <code>docs/prompts/</code>, dan <code>docs/chats/</code>, serta entri pengecualian
+          <code>.venv/</code>, <code>__pycache__/</code>, dan <code>.ipynb_checkpoints/</code> pada
+          <code>.gitignore</code> sebelum pengembangan modul dimulai.</p>
+      </div>
+
+      <div class="log-entry">
+        <div class="log-entry-header">Sesi 2 &mdash; Pembuatan Modul <code>config.py</code></div>
+        <div class="log-meta">
+          <strong>Tanggal &amp; Waktu:</strong> 2026-11-27 23:43 WIB &bull;
+          <strong>Branch:</strong> <span class="badge">danendra</span> &bull;
+          <strong>File:</strong> <code>config.py</code>
+        </div>
+        <p><strong>Ringkasan Prompt:</strong> Membuat modul <code>config.py</code> sesuai kontrak proyek berisi
+          konstanta path (<code>Dataset/Content/</code>, <code>Dataset/Style/</code>, <code>outputs/</code>), daftar 3
+          pasangan eksperimen utama, resolusi <code>(192, 256)</code> dan <code>(384, 512)</code>, normalisasi ImageNet,
+          pemetaan layer VGG-19, serta bobot default alpha dan variasi beta.</p>
+        <p><strong>Ringkasan Output LLM:</strong> Membuat <code>config.py</code> menggunakan <code>pathlib.Path</code>
+          relatif terhadap <code>PROJECT_ROOT</code> dengan definisi <code>CONTENT_DIR</code>, <code>STYLE_DIR</code>,
+          <code>OUTPUT_DIR</code>, <code>CONTENT_IMAGES</code>, <code>STYLE_IMAGES</code>,
+          <code>EXPERIMENT_PAIRS</code>, <code>IMAGENET_MEAN</code>, <code>IMAGENET_STD</code>,
+          <code>FAST_IMAGE_SIZE</code>, <code>FINAL_IMAGE_SIZE</code>, <code>VGG19_LAYER_MAP</code>,
+          <code>CONTENT_LAYERS</code>, <code>STYLE_LAYERS</code>, <code>DEFAULT_ALPHA</code>, <code>DEFAULT_BETA</code>,
+          dan <code>BETA_TUNING_VALUES</code>.</p>
+        <p><strong>Hasil Verifikasi / Pengujian:</strong> Menjalankan verifikasi dengan
+          <code>.venv\Scripts\python.exe</code> terhadap <code>config</code> dan
+          <code>torchvision.models.vgg19(weights=None).features</code>; seluruh path file dataset ditemukan, 3 pasangan
+          eksperimen valid, dan seluruh indeks <code>VGG19_LAYER_MAP</code> terkonfirmasi merupakan layer
+          <code>Conv2d</code> (<code>exit code 0</code>).</p>
+        <p><strong>Alasan Khusus:</strong> Seluruh konstanta path (<code>CONTENT_DIR</code>, <code>STYLE_DIR</code>,
+          <code>OUTPUT_DIR</code>), pasangan eksperimen, resolusi landscape <code>(192, 256)</code> dan
+          <code>(384, 512)</code>, normalisasi ImageNet, pemetaan layer VGG-19, dan bobot loss
+          (<code>DEFAULT_ALPHA</code>, <code>DEFAULT_BETA</code>, <code>BETA_TUNING_VALUES</code>) dipusatkan di
+          <code>config.py</code> menggunakan <code>pathlib.Path</code> relatif terhadap <code>PROJECT_ROOT</code>.
+          Pendekatan ini memastikan portabilitas lintas mesin serta keseragaman kontrak antarmuka antara modul Anggota 1
+          dan Anggota 2.</p>
+        <p><strong>Analisis &amp; Solusi:</strong> Tidak ditemukan eror saat pembuatan maupun pengujian
+          <code>config.py</code>. Untuk memastikan pemetaan <code>VGG19_LAYER_MAP</code> (<code>0</code>,
+          <code>5</code>, <code>10</code>, <code>19</code>, <code>21</code>, <code>28</code>) tidak meleset terhadap
+          indeks <code>Sequential</code> di <code>torchvision.models.vgg19</code>, dilakukan verifikasi langsung
+          menggunakan <code>.venv\Scripts\python.exe</code> guna mengonfirmasi seluruh indeks tersebut merupakan layer
+          <code>nn.Conv2d</code> dan seluruh path file di <code>Dataset/</code> tersedia.</p>
+      </div>
+
+      <div class="log-entry">
+        <div class="log-entry-header">Sesi 3 &mdash; Pembuatan Modul <code>models/vgg_extractor.py</code></div>
+        <div class="log-meta">
+          <strong>Tanggal &amp; Waktu:</strong> 2026-11-27 23:54 WIB &bull;
+          <strong>Branch:</strong> <span class="badge">danendra</span> &bull;
+          <strong>File:</strong> <code>models/vgg_extractor.py</code>
+        </div>
+        <p><strong>Ringkasan Prompt:</strong> Membuat <code>models/vgg_extractor.py</code> berisi kelas
+          <code>VGGFeatureExtractor</code> berbasis <code>torchvision.models.vgg19</code> pretrained dengan parameter
+          dibekukan (<code>requires_grad = False</code>), mode <code>eval()</code> terkunci, <code>vgg19.features</code>
+          dipotong hingga layer terdalam yang dibutuhkan, serta <code>forward(x)</code> mengembalikan dictionary fitur
+          untuk semua layer di <code>CONTENT_LAYERS</code> dan <code>STYLE_LAYERS</code> dari <code>config.py</code>.
+        </p>
+        <p><strong>Ringkasan Output LLM:</strong> Membuat <code>VGGFeatureExtractor(nn.Module)</code> pada
+          <code>models/vgg_extractor.py</code> yang memuat <code>vgg19(weights=VGG19_Weights.DEFAULT)</code>, memotong
+          <code>features</code> sampai <code>max_layer_idx + 1</code> (indeks <code>0..28</code>, panjang
+          <code>29</code>), menonaktifkan <code>inplace</code> pada <code>nn.ReLU</code> demi keamanan autograd,
+          membekukan seluruh parameter, mengunci mode <code>eval()</code> via <code>train()</code>, serta
+          mengimplementasikan <code>forward(x)</code> yang memvalidasi tensor <code>(B, 3, H, W)</code> dan
+          mengembalikan <code>{layer_name: feature_tensor}</code>.</p>
+        <p><strong>Hasil Verifikasi / Pengujian:</strong> Menjalankan pengujian via
+          <code>.venv\Scripts\python.exe</code> pada input dummy <code>(1, 3, 192, 256)</code>
+          (<code>requires_grad=True</code>); terverifikasi <code>len(ext.features) == 29</code>, semua parameter
+          <code>requires_grad == False</code>, mode <code>eval()</code> tetap terkunci saat <code>train(True)</code>
+          dipanggil, ke-6 layer (<code>conv1_1</code>, <code>conv2_1</code>, <code>conv3_1</code>, <code>conv4_1</code>,
+          <code>conv4_2</code>, <code>conv5_1</code>) terekstrak dengan shape sesuai, dan <code>loss.backward()</code>
+          menghasilkan <code>x.grad</code> tanpa error (<code>exit code 0</code>).</p>
+        <p><strong>Alasan Khusus:</strong> <code>VGGFeatureExtractor</code> memotong <code>vgg19.features</code> hanya
+          hingga <code>max_layer_idx + 1</code> (indeks <code>0..28</code>, 29 sub-layer sampai <code>conv5_1</code>)
+          agar tidak mengeksekusi layer di atas <code>conv5_1</code> maupun blok <code>classifier</code> sehingga hemat
+          memori dan lebih cepat di CPU maupun CUDA. Seluruh parameter dibekukan (<code>requires_grad = False</code>)
+          dan metode <code>train()</code> di-override menjadi <code>super().train(False)</code> untuk mengunci mode
+          <code>eval()</code> agar VGG-19 murni berperan sebagai ekstraktor fitur statis saat piksel gambar target
+          dioptimasi.</p>
+        <p><strong>Analisis &amp; Solusi:</strong> Tidak terjadi eror runtime selama pengembangan, namun terdapat
+          potensi risiko autograd dari <code>nn.ReLU(inplace=True)</code> bawaan <code>vgg19</code> di
+          <code>torchvision</code> yang dapat memodifikasi tensor fitur secara <em>in-place</em> sebelum gradien
+          dihitung. Sebagai langkah preventif, seluruh <code>nn.ReLU</code> dalam potongan <code>features</code> diset
+          <code>inplace = False</code>, lalu diverifikasi lewat uji forward-backward tensor dummy
+          <code>(1, 3, 192, 256)</code> untuk memastikan gradien mengalir ke input tanpa error dan seluruh bobot model
+          tetap beku.</p>
+      </div>
+
+      <div class="log-entry">
+        <div class="log-entry-header">Sesi 4 &mdash; Pembuatan Skrip Uji <code>tests/smoke_test.py</code></div>
+        <div class="log-meta">
+          <strong>Tanggal &amp; Waktu:</strong> 2026-11-27 23:57 WIB &bull;
+          <strong>Branch:</strong> <span class="badge">danendra</span> &bull;
+          <strong>File:</strong> <code>tests/smoke_test.py</code>
+        </div>
+        <p><strong>Ringkasan Prompt:</strong> Membuat <code>tests/smoke_test.py</code> yang dapat dijalankan via
+          <code>python -m tests.smoke_test --device cpu</code> untuk memverifikasi keberadaan file dataset, memeriksa
+          bentuk output dan status beku (<code>requires_grad == False</code>) <code>VGGFeatureExtractor</code> dengan
+          tensor dummy, serta otomatis menjalankan uji integrasi dengan <code>data/preprocessing.py</code> dan
+          <code>models/losses.py</code> jika modul tersebut sudah tersedia.</p>
+        <p><strong>Ringkasan Output LLM:</strong> Membuat <code>tests/smoke_test.py</code> dengan argumen CLI
+          <code>--device</code> dan <code>--size</code>, fungsi <code>test_dataset_files()</code>,
+          <code>test_vgg_extractor()</code> (cek parameter beku, penguncian <code>eval()</code>, shape output 6 layer,
+          backward gradien input), serta <code>test_optional_integration()</code> yang otomatis menguji
+          <code>data.preprocessing</code> dan <code>models.losses</code> jika tersedia atau melewati dengan status
+          <code>[SKIP]</code> jika belum ada.</p>
+        <p><strong>Hasil Verifikasi / Pengujian:</strong> Menjalankan
+          <code>.venv\Scripts\python.exe -m tests.smoke_test --device cpu</code>; dataset (3 content, 3 style, 3
+          pasangan) dan <code>VGGFeatureExtractor</code> di CPU lulus (<code>len(features)=29</code>,
+          <code>frozen=True</code>, <code>eval_locked=True</code>), sedangkan integrasi <code>data.preprocessing</code>
+          dan <code>models.losses</code> berstatus <code>[SKIP]</code> karena modul belum tersedia
+          (<code>exit code 0</code>).</p>
+        <p><strong>Alasan Khusus:</strong> Skrip <code>tests/smoke_test.py</code> dirancang agar dapat memvalidasi
+          kelengkapan <code>Dataset/</code> dan kontrak <code>VGGFeatureExtractor</code> secara mandiri memakai tensor
+          dummy terlebih dahulu, sekaligus otomatis mendeteksi dan menguji <code>data/preprocessing.py</code> dan
+          <code>models/losses.py</code> apabila modul Anggota 2 sudah tersedia di branch. Pola pencocokan kandidat nama
+          fungsi (<code>_find_callable</code>) dan penyaringan argumen via <code>inspect.signature</code>
+          (<code>_call_with_accepted_kwargs</code>) diterapkan agar uji integrasi tetap kompatibel terhadap variasi
+          tanda tangan fungsi antarmodul.</p>
+        <p><strong>Analisis &amp; Solusi:</strong> Tidak ditemukan eror saat eksekusi pada CPU
+          (<code>--device cpu</code>). Karena modul <code>data.preprocessing</code> dan <code>models.losses</code> belum
+          tersedia di branch <code>danendra</code> saat pengujian berlangsung, integrasi keduanya ditangani secara
+          terkendali menggunakan blok <code>try ... except ModuleNotFoundError</code> dengan status <code>[SKIP]</code>
+          sehingga pengujian modul inti Anggota 1 tetap dapat berjalan dan mengembalikan <code>exit code 0</code>.</p>
+      </div>
+
+      <div class="log-entry">
+        <div class="log-entry-header">Sesi 5 &mdash; Pembuatan Skrip Visualisasi <code>scripts/make_figures.py</code>
+          &amp; Figur Laporan</div>
+        <div class="log-meta">
+          <strong>Tanggal &amp; Waktu:</strong> 2026-11-28 17:30 WIB &bull;
+          <strong>Branch:</strong> <span class="badge">danendra</span> &bull;
+          <strong>File:</strong> <code>scripts/make_figures.py</code>,
+          <code>outputs/figures/loss_curves_pairs.png</code>, <code>outputs/figures/loss_curves_tuning_beta.png</code>,
+          <code>outputs/figures/grid_main_pairs.png</code>, <code>outputs/figures/grid_beta_tuning.png</code>
+        </div>
+        <p><strong>Ringkasan Prompt:</strong> Memeriksa struktur file pada 6 subfolder eksperimen di
+          <code>outputs/</code> (<code>pair1_gedung_composition</code>, <code>pair2_danau_starry</code>,
+          <code>pair3_rumah_greatwave</code>, <code>tuning_beta_1e3</code>, <code>tuning_beta_1e5</code>,
+          <code>tuning_beta_1e7</code>) lalu membuat <code>scripts/make_figures.py</code> untuk menghasilkan plot kurva
+          <code>content_loss</code>, <code>style_loss</code>, dan <code>total_loss</code>, grid visual
+          Content&ndash;Style&ndash;Output 3 pasangan utama, serta grid perbandingan tuning variasi &beta; &isin;
+          {10<sup>3</sup>, 10<sup>5</sup>, 10<sup>7</sup>} ke <code>outputs/figures/</code>.</p>
+        <p><strong>Ringkasan Output LLM:</strong> Membuat <code>scripts/make_figures.py</code> dengan fungsi
+          <code>load_metrics_csv()</code> (validasi kolom wajib <code>step</code>, <code>content_loss</code>,
+          <code>style_loss</code>, <code>total_loss</code>), <code>load_all_experiments()</code>,
+          <code>plot_main_pair_losses()</code>, <code>plot_beta_tuning_losses()</code>,
+          <code>plot_main_pairs_grid()</code>, dan <code>plot_beta_tuning_grid()</code> beresolusi 300 DPI serta
+          mendukung CLI <code>--mode real</code> dan <code>--mode dummy</code>.</p>
+        <p><strong>Hasil Verifikasi / Pengujian:</strong> Menjalankan
+          <code>.venv\Scripts\python.exe -m scripts.make_figures</code> dan
+          <code>.venv\Scripts\python.exe -m scripts.make_figures --mode dummy --output-dir "$env:TEMP\nst_dummy_figs_out" --dpi 100</code>;
+          keduanya selesai tanpa error (<code>exit code 0</code>), menghasilkan 4 file PNG di
+          <code>outputs/figures/</code> (<code>loss_curves_pairs.png</code> 4384&times;3184,
+          <code>loss_curves_tuning_beta.png</code> 4384&times;1354, <code>grid_main_pairs.png</code> 4031&times;3184,
+          <code>grid_beta_tuning.png</code> 4984&times;1106) yang telah diverifikasi tampilannya secara visual.</p>
+        <p><strong>Alasan Khusus:</strong> Skrip <code>scripts/make_figures.py</code> dibangun dengan validasi ketat
+          terhadap kontrak kolom <code>metrics.csv</code> (<code>step</code>, <code>content_loss</code>,
+          <code>style_loss</code>, <code>total_loss</code>), penggunaan backend headless Matplotlib <code>Agg</code>,
+          serta resolusi default <code>300 DPI</code> agar figur siap dimasukkan ke laporan PDF. Dukungan
+          <code>--mode dummy</code> ditambahkan terpisah dari <code>--mode real</code> agar pipeline visualisasi tetap
+          dapat diuji secara mandiri dengan data sintetis tanpa menyentuh hasil eksperimen asli di
+          <code>outputs/</code>.</p>
+        <p><strong>Analisis &amp; Solusi:</strong> Tidak terjadi eror pada eksekusi mode <code>real</code> maupun
+          <code>dummy</code>, namun perbedaan skala numerik antar metrik (<code>content_loss</code> vs
+          <code>style_loss</code> dan <code>total_loss</code>) serta variasi format path relatif/Windows di
+          <code>run_config.json</code> perlu ditangani agar grafik tetap terbaca dan portabel. Solusinya,
+          <code>_resolve_repo_path</code> menormalisasi pemisah path dengan fallback ke <code>config.py</code>,
+          sementara <code>Style Loss</code> dan <code>Total Loss</code> otomatis memakai skala logaritmik
+          (<code>ax.set_yscale("log")</code>) jika seluruh nilainya positif disertai anotasi nilai loss akhir pada tiap
+          subplot.</p>
+      </div>
+
+      <h2>A.2 Log Interaksi Anggota 2 &mdash; Naufal Luthfi Assary (2311102125)</h2>
+      <p>Sumber: <code>docs/logs/log_naufal.md</code></p>
+
+      <div class="log-entry">
+        <div class="log-entry-header">Modul 1 &mdash; <code>data/preprocessing.py</code> &amp;
+          <code>data/__init__.py</code></div>
+        <div class="log-meta">
+          <strong>Tanggal &amp; Jam Sesi:</strong> 27/11/2026, 21:23 WIB &ndash; 28/11/2026, 08:26 WIB &bull;
+          <strong>Lampiran Ekspor Chat:</strong> <code>docs/chats/chat_naufal_modul1_preprocessing.md</code>
+        </div>
+        <p><strong>1. Tahap Inisiasi &mdash; Prompt Kelompok:</strong> "Tolong buatkan Modul 1, yaitu file
+          <code>data/preprocessing.py</code> (dan <code>data/__init__.py</code> kosong jika belum ada). Kebutuhan
+          fungsinya: <code>load_image(path, image_size=(384, 512), device='cpu')</code>...
+          <code>deprocess_image(tensor)</code>... <code>save_image(tensor, output_path)</code>... Blok
+          <code>if __name__ == "__main__":</code> untuk verifikasi... Catatan penting: Cek dulu apakah
+          <code>config.py</code> sudah ada di repositori. Jika sudah ada, impor konstanta resolusi dan normalisasi dari
+          sana; jika belum ada, gunakan nilai default di dalam <code>data/preprocessing.py</code> dulu dan jangan
+          membuat atau mengubah <code>config.py</code>. Sertakan komentar perubahan dimensi tensor di tiap langkah."</p>
+        <p><strong>Alasan Khusus:</strong> Pendekatan ini dipilih agar seluruh input gambar kompatibel dengan arsitektur
+          <em>pretrained</em> VGG-19. Konversi paksa ke RGB diterapkan untuk mencegah eror dimensi <em>channel</em>
+          (misalnya gambar berformat RGBA atau <em>grayscale</em>). Resolusi target diatur ke <code>(384, 512)</code>
+          agar sesuai dengan orientasi <em>landscape</em> keenam gambar dataset sehingga proporsi objek tidak
+          terdistorsi sekaligus menjaga penggunaan memori GPU tetap efisien. Normalisasi ImageNet diterapkan secara
+          manual menggunakan operasi tensor dasar (<code>permute</code>, <code>unsqueeze</code>, dan
+          <em>broadcasting</em>) agar distribusi piksel cocok dengan bobot VGG-19 sekaligus menjaga transparansi
+          perubahan bentuk tensor di tiap tahap. Selain itu, penggunaan konstanta <em>fallback</em> tanpa membuat atau
+          mengubah <code>config.py</code> bertujuan mematuhi batas kontrak modul dengan Anggota 1 agar tidak menimbulkan
+          <em>merge conflict</em> di Git, sementara blok verifikasi <code>outputs/data_check.png</code> disertakan untuk
+          memastikan proses <em>preprocessing</em> dan <em>deprocessing</em> berjalan bolak-balik dengan warna serta
+          proporsi normal sebelum masuk ke tahap <em>training</em>.</p>
+        <p><strong>Output Model:</strong> Membuat <code>data/__init__.py</code> dan <code>data/preprocessing.py</code>
+          dengan fallback konstanta <code>DEFAULT_IMAGE_SIZE = (384, 512)</code>, <code>IMAGENET_MEAN</code>, dan
+          <code>IMAGENET_STD</code> (saat <code>config.py</code> belum tersedia di repo), berisi fungsi
+          <code>load_image</code>, <code>deprocess_image</code>, <code>save_image</code>, serta blok verifikasi
+          <code>if __name__ == "__main__":</code> yang memvalidasi 6 gambar di <code>Dataset/Content/</code> dan
+          <code>Dataset/Style/</code> lalu menyimpan grid 2&times;3 ke <code>outputs/data_check.png</code>.</p>
+        <pre># Konversi ke tensor PyTorch -> (H, W, 3)
+tensor = torch.from_numpy(img_np)
+# Pindahkan sumbu channel ke depan: (H, W, 3) -> (3, H, W)
+tensor = tensor.permute(2, 0, 1).contiguous()
+# Tambahkan dimensi batch: (3, H, W) -> (1, 3, H, W)
+tensor = tensor.unsqueeze(0).to(device=target_device, dtype=torch.float32)
+
+# Siapkan mean &amp; std ImageNet untuk broadcasting: (3,) -> (1, 3, 1, 1)
+mean = torch.tensor(IMAGENET_MEAN, dtype=tensor.dtype, device=target_device).view(1, 3, 1, 1)
+std = torch.tensor(IMAGENET_STD, dtype=tensor.dtype, device=target_device).view(1, 3, 1, 1)
+
+# Normalisasi ImageNet per channel: (1, 3, H, W) -> (1, 3, H, W)
+tensor = (tensor - mean) / std</pre>
+        <p><strong>2. Tahap Penanganan Eror / Debugging &mdash; Pesan Eror dari Terminal:</strong></p>
+        <pre>Exception has occurred: ModuleNotFoundError
+No module named 'numpy'
+  File "D:\Semester 7\Gen AI\Vibe_Coding_NST\data\preprocessing.py", line 13, in &lt;module&gt;
+    import numpy as np  
+ModuleNotFoundError: No module named 'numpy</pre>
+        <p><strong>Prompt Perbaikan ke LLM:</strong> "[Menempelkan traceback ModuleNotFoundError di atas] &rarr;
+          dilanjutkan dengan: 'lanjutkan' dan 'langkah 1'"</p>
+        <p><strong>Analisis &amp; Solusi Kelompok:</strong> Eror <code>ModuleNotFoundError</code> terjadi karena skrip
+          dijalankan menggunakan <em>interpreter</em> Python bawaan sistem yang belum memiliki pustaka dependensi proyek
+          (<code>numpy</code>, <code>torch</code>, <code>torchvision</code>, <code>pillow</code>, dan
+          <code>matplotlib</code>) serta belum diisolasi di dalam <em>virtual environment</em>. Dengan panduan LLM,
+          masalah diselesaikan melalui pembuatan <em>virtual environment</em> <code>.venv</code> (Python 3.12.10),
+          pemasangan pustaka inti beserta PyTorch dukungan CUDA 12.4 (<code>torch 2.6.0+cu124</code> dan
+          <code>torchvision 0.21.0+cu124</code>), lalu mengarahkan eksekusi ke <code>.\.venv\Scripts\python.exe</code>.
+          Setelah diperbaiki, verifikasi berhasil berjalan tanpa eror dengan dukungan GPU aktif
+          (<code>torch.cuda.is_available() == True</code> pada NVIDIA GeForce RTX 4050 Laptop GPU), seluruh 6 gambar
+          terbaca berdimensi <code>(1, 3, 384, 512)</code>, uji <code>deprocess_image</code> menghasilkan bentuk
+          <code>(384, 512, 3)</code> bertipe <code>float32</code> dengan rentang <code>[0.0, 1.0]</code>, dan
+          visualisasi grid 2&times;3 tersimpan di <code>outputs/data_check.png</code>.</p>
+      </div>
+
+      <div class="log-entry">
+        <div class="log-entry-header">Modul 2 &mdash; <code>models/losses.py</code> &amp;
+          <code>models/__init__.py</code></div>
+        <div class="log-meta">
+          <strong>Tanggal &amp; Jam Sesi:</strong> 28/11/2026, 08:40 WIB &ndash; 08:46 WIB &bull;
+          <strong>Lampiran Ekspor Chat:</strong> <code>docs/chats/chat_naufal_modul2_losses.md</code>
+        </div>
+        <p><strong>1. Tahap Inisiasi &mdash; Prompt Kelompok:</strong> "Tolong buatkan Modul 2, yaitu file
+          <code>models/losses.py</code> (dan file kosong <code>models/__init__.py</code> jika belum ada) untuk
+          perhitungan seluruh fungsi loss Neural Style Transfer (NST) secara manual dari nol menggunakan operasi tensor
+          dasar PyTorch... Kontrak integrasi dengan <code>models/vgg_extractor.py</code>: dictionary
+          <code>dict[str, torch.Tensor]</code> berdimensi <code>(B, C, H, W)</code>... Cek terlebih dahulu apakah
+          <code>config.py</code> sudah ada... jika belum ada, gunakan nilai fallback default di dalam
+          <code>models/losses.py</code> dan JANGAN membuat atau mengubah <code>config.py</code> maupun
+          <code>models/vgg_extractor.py</code>. Buat <code>compute_gram_matrix</code>,
+          <code>compute_content_loss</code>, <code>compute_style_loss</code>, <code>compute_total_loss</code>, serta
+          blok <code>if __name__ == "__main__":</code> sebagai unit test mandiri..."</p>
+        <p><strong>Alasan Khusus:</strong> Seluruh fungsi loss dibangun dari nol memakai operasi tensor dasar
+          (<code>reshape</code>, <code>transpose</code>, <code>torch.bmm</code>, pengurangan, pengkuadratan
+          <code>** 2</code>, dan <code>torch.mean</code>) tanpa <code>nn.MSELoss</code> maupun <code>F.mse_loss</code>
+          agar mekanisme matematis Neural Style Transfer transparan dan terlacak perubahan dimensinya di setiap baris.
+          Normalisasi Gram Matrix dengan <code>C * H * W</code> diterapkan supaya skala <em>style loss</em> konsisten
+          terhadap variasi ukuran spasial dan jumlah kanal antar layer VGG-19. Mekanisme impor <code>config.py</code>
+          berbasis <code>try ... except ImportError</code> beserta nilai <em>fallback</em>
+          (<code>DEFAULT_CONTENT_LAYER = "conv4_2"</code>, <code>DEFAULT_STYLE_WEIGHTS</code>,
+          <code>DEFAULT_ALPHA = 1.0</code>, <code>DEFAULT_BETA = 1e5</code>) dipakai tanpa menyentuh
+          <code>config.py</code> maupun <code>models/vgg_extractor.py</code> demi menjaga batas kontrak antar modul di
+          Git. Selain itu, <code>compute_total_loss</code> mengembalikan tuple
+          <code>(total_loss, content_loss, style_loss)</code> agar tiap komponen loss dapat dicatat terpisah ke
+          <code>metrics.csv</code> saat <em>training</em>.</p>
+        <p><strong>Output Model:</strong> Membuat file kosong <code>models/__init__.py</code> dan
+          <code>models/losses.py</code> berisi <code>compute_gram_matrix</code>, <code>compute_content_loss</code>,
+          <code>compute_style_loss</code>, <code>compute_total_loss</code>, serta unit test mandiri
+          <code>if __name__ == "__main__":</code> yang otomatis memakai <code>cuda</code> bila tersedia.</p>
+        <pre># Ratakan dimensi spasial H dan W menjadi satu dimensi: (B, C, H, W) -> (B, C, H * W)
+features = feature_map.reshape(batch_size, channels, height * width)
+# Transpose dua dimensi terakhir untuk perkalian Gram: (B, C, H * W) -> (B, H * W, C)
+features_t = features.transpose(1, 2)
+# Kalikan matriks fitur per batch dengan transposenya: (B, C, H * W) x (B, H * W, C) -> (B, C, C)
+gram = torch.bmm(features, features_t)
+# Normalisasi Gram Matrix dengan total elemen per sampel (C * H * W): (B, C, C) -> (B, C, C)
+gram = gram / float(num_elements)</pre>
+        <p><strong>2. Tahap Penanganan Eror / Verifikasi:</strong> Tidak ditemukan eror pada kode
+          <code>models/losses.py</code>. Saat verifikasi awal di terminal PowerShell 5.1 sempat muncul <em>parser
+            error</em> perintah shell karena penggunaan pemisah <code>&amp;&amp;</code>, lalu langsung berhasil ketika
+          dijalankan dengan pemisah <code>;</code>. Pengujian mandiri memakai
+          <code>.\.venv\Scripts\python.exe models/losses.py</code> dan
+          <code>.\.venv\Scripts\python.exe -m models.losses</code> berjalan lancar pada <code>cuda</code> (Gram Matrix
+          <code>(2, 128, 128)</code> simetris, loss identik <code>0.00e+00</code>, <code>total_loss = 2.0995</code>,
+          gradien bebas <code>NaN</code>/<code>Inf</code>).</p>
+      </div>
+
+      <div class="log-entry">
+        <div class="log-entry-header">Modul 3 &mdash; <code>train.py</code> (Training &amp; Optimasi End-to-End)</div>
+        <div class="log-meta">
+          <strong>Tanggal &amp; Jam Sesi:</strong> 28/11/2026, 09:57 WIB &ndash; 10:05 WIB &bull;
+          <strong>Lampiran Ekspor Chat:</strong> <code>docs/chats/chat_naufal_modul3_train.md</code>
+        </div>
+        <p><strong>1. Tahap Inisiasi &mdash; Prompt Kelompok:</strong> "Tolong buatkan Modul 3, yaitu file
+          <code>train.py</code> di root repositori untuk menjalankan proses optimasi Neural Style Transfer (NST) secara
+          end-to-end dengan mengintegrasikan modul yang sudah ada. Wajib baca dan periksa dulu isi
+          <code>config.py</code>, <code>data/preprocessing.py</code>, <code>models/vgg_extractor.py</code>, dan
+          <code>models/losses.py</code>... Jangan mengubah <code>config.py</code>, <code>models/vgg_extractor.py</code>,
+          <code>tests/smoke_test.py</code>, maupun <code>scripts/make_figures.py</code>. Buat antarmuka CLI
+          <code>argparse</code> (<code>--content</code>, <code>--style</code>, <code>--output_dir</code>,
+          <code>--steps</code>, <code>--lr</code>, <code>--alpha</code>, <code>--beta</code>, <code>--optimizer</code>,
+          <code>--init</code>, <code>--height</code>, <code>--width</code>, <code>--device</code>,
+          <code>--log_every</code>, <code>--save_every</code>), alur optimasi pada piksel <code>target</code> (mendukung
+          <code>adam</code> dan <code>lbfgs</code> dengan <code>closure()</code>), serta pencatatan ke
+          <code>metrics.csv</code>, <code>run_config.json</code>, <code>result.png</code>, dan ringkasan terminal."</p>
+        <p><strong>Alasan Khusus:</strong> Pendekatan optimasi langsung pada tensor piksel <code>target</code>
+          (<code>requires_grad=True</code>) sambil membekukan bobot <code>VGGFeatureExtractor</code>
+          (<code>requires_grad=False</code>, mode <code>eval()</code>) dan melepaskan fitur referensi
+          <code>content_features</code> serta <code>style_features</code> memakai <code>torch.no_grad()</code> +
+          <code>.detach()</code> diterapkan agar hanya citra hasil yang berubah dan tidak terjadi pembaruan bobot
+          jaringan maupun kebocoran graf autograd. Pemisahan helper <code>initialize_target</code>,
+          <code>build_optimizer</code>, dan <code>_compute_step_losses</code> menjaga kode tetap ringkas tanpa duplikasi
+          antara loop <code>adam</code> dan pola <code>closure()</code> pada <code>lbfgs</code> (<code>max_iter=1</code>
+          agar tiap panggilan <code>optimizer.step(closure)</code> selaras dengan 1 step loop). Selain itu, bobot gaya
+          diteruskan secara eksplisit untuk <code>STYLE_LAYERS</code> dari <code>config.py</code> (<code>0.2</code> per
+          layer) agar layer konten <code>conv4_2</code> tidak ikut terhitung sebagai <em>style loss</em>, sementara
+          pencatatan <code>metrics.csv</code> tiap step dan <code>run_config.json</code> disiapkan sebagai sumber data
+          kurva konvergensi dan reproduksibilitas eksperimen.</p>
+        <p><strong>Output Model:</strong> Membuat <code>train.py</code> di root repositori yang mengintegrasikan
+          <code>config.py</code>, <code>data.preprocessing</code>, <code>models.vgg_extractor</code>, dan
+          <code>models.losses</code>, tanpa menyentuh modul lain.</p>
+        <pre>def _compute_step_losses() -&gt; tuple[torch.Tensor, float, float, float]:
+    optimizer.zero_grad()
+    # Ekstrak aktivasi target -> dict[str, (1, C_l, H_l, W_l)]
+    target_features = extractor(target)
+    # Hitung total, content, dan style loss -> masing-masing tensor skalar ()
+    total_loss, content_loss, style_loss = compute_total_loss(
+        target_features=target_features,
+        content_features=content_features,
+        style_features=style_features,
+        alpha=args.alpha,
+        beta=args.beta,
+        content_layer=content_layer,
+        style_weights=style_weights,
+    )
+    total_loss.backward()
+    return (
+        total_loss,
+        float(total_loss.item()),
+        float(content_loss.item()),
+        float(style_loss.item()),
+    )</pre>
+        <p><strong>2. Hasil Verifikasi:</strong> Tidak ditemukan eror. Uji CLI <code>train.py --help</code>, uji singkat
+          <code>adam</code> (5 step, <code>192x256</code>), uji singkat <code>lbfgs</code> + <code>--init noise</code>
+          (5 step, <code>192x256</code>), dan <code>smoke_test --device cuda</code> berhasil (<code>exit code 0</code>).
+          Uji coba 100 step pada <code>outputs/test_100steps/</code> (<code>384x512</code>, <code>cuda</code>) selesai
+          dalam <code>5.0888</code> detik (<code>0.050888</code> dtk/step): step 1 (<code>total=2805.0608</code>,
+          <code>content=0.0000</code>, <code>style=0.028051</code>) &rarr; step 100 (<code>total=137.9547</code>,
+          <code>content=77.9505</code>, <code>style=0.000600</code>).</p>
+      </div>
+
+      <div class="log-entry">
+        <div class="log-entry-header">Modul 4 &mdash; <code>outputs/</code> (Eksperimen Visual &amp; Hyperparameter
+          Tuning via <code>train.py</code>)</div>
+        <div class="log-meta">
+          <strong>Tanggal &amp; Jam Sesi:</strong> 28/11/2026, 10:12 WIB &ndash; 10:16 WIB &bull;
+          <strong>Lampiran Ekspor Chat:</strong> <code>docs/chats/chat_naufal_modul4_eksperimen.md</code>
+        </div>
+        <p><strong>1. Tahap Inisiasi &mdash; Prompt Kelompok:</strong> "Tolong jalankan Modul 4 (Eksperimen Visual &amp;
+          Hyperparameter Tuning) menggunakan <code>train.py</code> yang sudah terverifikasi pada device
+          <code>cuda</code> dengan resolusi penuh <code>(384, 512)</code>... Jalankan 2 kelompok eksperimen menggunakan
+          <code>.\.venv\Scripts\python.exe train.py</code>: Kelompok A (3 pasangan utama di
+          <code>EXPERIMENT_PAIRS</code> dengan
+          <code>--steps 500 --lr 0.02 --alpha 1.0 --beta 1e5 --optimizer adam --init content --device cuda --log_every 100 --save_every 100</code>)
+          ke <code>outputs/pair1_gedung_composition</code>, <code>outputs/pair2_danau_starry</code>,
+          <code>outputs/pair3_rumah_greatwave</code>; Kelompok B (3 variasi <code>--beta</code>: <code>1e3</code>,
+          <code>1e5</code>, <code>1e7</code> pada pasangan 1 dengan
+          <code>--steps 500 --lr 0.02 --alpha 1.0 --optimizer adam --init content --device cuda --log_every 100</code>)
+          ke <code>outputs/tuning_beta_1e3</code>, <code>outputs/tuning_beta_1e5</code>,
+          <code>outputs/tuning_beta_1e7</code>."</p>
+        <p><strong>Alasan Khusus:</strong> Sebelum eksekusi batch eksperimen, <code>config.py</code> dan direktori
+          <code>scripts/</code> diperiksa terlebih dahulu guna memastikan kesesuaian urutan
+          <code>EXPERIMENT_PAIRS</code> serta kesiapan penamaan folder output agar kompatibel dengan tahap pembuatan
+          figur (<code>scripts/make_figures.py</code>), tanpa menyentuh file milik Anggota 1. Seluruh eksperimen
+          dijalankan pada resolusi penuh <code>(384, 512)</code> dengan akselerasi GPU (<code>cuda</code>) selama 500
+          iterasi (<code>adam</code>, <code>lr=0.02</code>, <code>--init content</code>) agar detail tekstur gaya dan
+          struktur konten terekam matang. Kelompok A menguji generalisasi pipeline pada tiga pasangan visual berbeda,
+          sementara Kelompok B mengisolasi pengaruh rasio bobot gaya terhadap konten (&beta; &isin; {10<sup>3</sup>,
+          10<sup>5</sup>, 10<sup>7</sup>}, &alpha; = 1,0) pada pasangan 1.</p>
+        <p><strong>Output Model &amp; Verifikasi:</strong> Keenam eksperimen selesai dengan <code>exit code 0</code>
+          pada <code>NVIDIA GeForce RTX 4050 Laptop GPU</code> (~25,5&ndash;25,9 detik per run, masing-masing 500 baris
+          di <code>metrics.csv</code>): Kelompok A menghasilkan <code>pair1_gedung_composition</code>
+          (<code>2805.0608</code> &rarr; <code>78.4423</code>), <code>pair2_danau_starry</code> (<code>291.3643</code>
+          &rarr; <code>16.2347</code>), <code>pair3_rumah_greatwave</code> (<code>1602.1853</code> &rarr;
+          <code>48.6043</code>); Kelompok B menghasilkan <code>tuning_beta_1e3</code> (<code>28.0506</code> &rarr;
+          <code>8.3261</code>), <code>tuning_beta_1e5</code> (<code>2805.0608</code> &rarr; <code>78.4505</code>), dan
+          <code>tuning_beta_1e7</code> (<code>280506.0625</code> &rarr; <code>1056.0255</code>). Verifikasi
+          <code>git status --short config.py models/vgg_extractor.py tests/smoke_test.py scripts/</code> memastikan
+          tidak ada file milik Anggota 1 yang berubah.</p>
+      </div>
+    </section>
+
+    <!-- ==================== LAMPIRAN B ==================== -->
+    <section id="lampiran-b">
+      <h1 class="chapter-title">Lampiran B. Daftar Arsip Percakapan di <code>docs/chats/</code></h1>
+      <p>
+        Seluruh riwayat percakapan penuh antara masing-masing anggota tim dan agen AI selama pengembangan setiap modul
+        disimpan dalam format Markdown di direktori <code>docs/chats/</code> sebagai bukti keterlacakan proses <em>Vibe
+          Coding</em>:
+      </p>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>Berkas Arsip Chat</th>
+            <th>Anggota</th>
+            <th>Modul / Cakupan</th>
+            <th>Conversation ID</th>
+            <th class="num">Baris / Ukuran</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><a
+                href="chats/chat_danendra_modul1_config.md"><code>docs/chats/chat_danendra_modul1_config.md</code></a>
+            </td>
+            <td>Danendra (2311102146)</td>
+            <td>Modul 1 (Inisialisasi Struktur Repo &amp; <code>config.py</code>)</td>
+            <td><code>26033b05-edd4-40df-b6b4-a45b758eb71e</code></td>
+            <td class="num">319 baris<br />(20.176 B)</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><a
+                href="chats/chat_danendra_modul2_vgg_smoke.md"><code>docs/chats/chat_danendra_modul2_vgg_smoke.md</code></a>
+            </td>
+            <td>Danendra (2311102146)</td>
+            <td>Modul 2 (<code>models/vgg_extractor.py</code> &amp; <code>tests/smoke_test.py</code>)</td>
+            <td><code>26033b05-edd4-40df-b6b4-a45b758eb71e</code></td>
+            <td class="num">104 baris<br />(10.870 B)</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><a
+                href="chats/chat_danendra_modul3_figures.md"><code>docs/chats/chat_danendra_modul3_figures.md</code></a>
+            </td>
+            <td>Danendra (2311102146)</td>
+            <td>Modul 3 (<code>scripts/make_figures.py</code> &amp; Figur <code>outputs/figures/</code>)</td>
+            <td><code>1c2d3bc2-08f2-496b-921a-6cc5e51bd360</code></td>
+            <td class="num">253 baris<br />(20.820 B)</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><a
+                href="chats/chat_naufal_modul1_preprocessing.md"><code>docs/chats/chat_naufal_modul1_preprocessing.md</code></a>
+            </td>
+            <td>Naufal (2311102125)</td>
+            <td>Modul 1 (<code>data/preprocessing.py</code> &amp; <code>data/__init__.py</code>)</td>
+            <td><code>34e851ba-4b62-4e9d-a95e-6591cf81ea46</code></td>
+            <td class="num">364 baris<br />(33.172 B)</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td><a href="chats/chat_naufal_modul2_losses.md"><code>docs/chats/chat_naufal_modul2_losses.md</code></a>
+            </td>
+            <td>Naufal (2311102125)</td>
+            <td>Modul 2 (<code>models/losses.py</code> &amp; <code>models/__init__.py</code>)</td>
+            <td><code>7e6c9dd6-7314-46c8-b73d-e321b15b189c</code></td>
+            <td class="num">83 baris<br />(7.384 B)</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td><a href="chats/chat_naufal_modul3_train.md"><code>docs/chats/chat_naufal_modul3_train.md</code></a></td>
+            <td>Naufal (2311102125)</td>
+            <td>Modul 3 (<code>train.py</code>)</td>
+            <td><code>c4667148-6a2b-4923-8790-d6592091b9ed</code></td>
+            <td class="num">92 baris<br />(8.626 B)</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td><a
+                href="chats/chat_naufal_modul4_eksperimen.md"><code>docs/chats/chat_naufal_modul4_eksperimen.md</code></a>
+            </td>
+            <td>Naufal (2311102125)</td>
+            <td>Modul 4 (Eksperimen Visual &amp; Hyperparameter Tuning via <code>train.py</code>)</td>
+            <td><code>f8849fa7-123d-47ec-b024-2fbd235f4287</code></td>
+            <td class="num">138 baris<br />(15.587 B)</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+  </div>
+</body>
+
+</html>
